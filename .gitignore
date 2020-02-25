@@ -6,3 +6,19 @@ build/target/
 imageComp-server/target/
 
 target/
+
+.project
+
+.settings/org.eclipse.m2e.core.prefs
+
+build/.settings/org.eclipse.m2e.core.prefs
+
+imageComp-server/.classpath
+
+imageComp-server/.settings/org.eclipse.jdt.apt.core.prefs
+
+imageComp-server/.settings/org.eclipse.jdt.core.prefs
+
+imageComp-server/.settings/org.eclipse.m2e.core.prefs
+
+vscode.code-workspace
