@@ -1,2 +1,8 @@
 
 images/inspiration/
+
+build/target/
+
+imageComp-server/target/
+
+target/
