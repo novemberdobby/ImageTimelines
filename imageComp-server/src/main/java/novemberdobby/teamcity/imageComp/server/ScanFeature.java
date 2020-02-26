@@ -50,7 +50,11 @@ public class ScanFeature extends BuildFeature {
         String paths = params.get(Constants.FEATURE_SETTING_ARTIFACTS);
         
         sb.append("Generate comparisons for:\r\n");
-        sb.append(paths);
+        if(paths == null) {
+            sb.append("<none>");
+        } else {
+            sb.append(paths);
+        }
         
         return sb.toString();
     }
