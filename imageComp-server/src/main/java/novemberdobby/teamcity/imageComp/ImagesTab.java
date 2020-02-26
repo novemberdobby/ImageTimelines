@@ -8,8 +8,10 @@ import jetbrains.buildServer.serverSide.SBuildType;
 import jetbrains.buildServer.serverSide.SFinishedBuild;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifacts;
 import jetbrains.buildServer.serverSide.artifacts.BuildArtifactsViewMode;
+import jetbrains.buildServer.serverSide.auth.Permission;
 import jetbrains.buildServer.users.SUser;
 import jetbrains.buildServer.web.openapi.buildType.BuildTypeTab;
+import jetbrains.buildServer.web.util.SessionUser;
 import jetbrains.buildServer.web.openapi.WebControllerManager;
 import jetbrains.buildServer.serverSide.ProjectManager;
 
@@ -33,8 +35,11 @@ public class ImagesTab extends BuildTypeTab {
 
     @Override
     public boolean isAvailable(HttpServletRequest request) {
+
+        SUser user = SessionUser.getUser(request);
+        
         //basic check, doesn't mean there'll necessarily be anything to look at
         SBuildType type = getBuildType(request);
-        return type != null && type.getLastChangesFinished() != null;
+        return type != null && user.isPermissionGrantedForProject(type.getProjectId(), Permission.VIEW_PROJECT);
     }
 }
