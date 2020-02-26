@@ -5,8 +5,11 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 
 import jetbrains.buildServer.serverSide.SBuildType;
+import jetbrains.buildServer.serverSide.SFinishedBuild;
+import jetbrains.buildServer.serverSide.artifacts.BuildArtifacts;
+import jetbrains.buildServer.serverSide.artifacts.BuildArtifactsViewMode;
 import jetbrains.buildServer.users.SUser;
-import jetbrains.buildServer.web.openapi.buildType.BuildTypeTab;;
+import jetbrains.buildServer.web.openapi.buildType.BuildTypeTab;
 import jetbrains.buildServer.web.openapi.WebControllerManager;
 import jetbrains.buildServer.serverSide.ProjectManager;
 
@@ -17,7 +20,21 @@ public class ImagesTab extends BuildTypeTab {
     }
 
     @Override
-    protected void fillModel(Map<String, Object> arg0, HttpServletRequest arg1, SBuildType arg2, SUser arg3) {
+    protected void fillModel(Map<String, Object> model, HttpServletRequest request, SBuildType buildType, SUser user) {
+        SFinishedBuild build = buildType.getLastChangesFinished();
+        if(build == null)
+        {
+            return;
+        }
 
+        BuildArtifacts artifacts = build.getArtifacts(BuildArtifactsViewMode.VIEW_DEFAULT);
+        //TODO: display...stuff
+    }
+
+    @Override
+    public boolean isAvailable(HttpServletRequest request) {
+        //basic check, doesn't mean there'll necessarily be anything to look at
+        SBuildType type = getBuildType(request);
+        return type != null && type.getLastChangesFinished() != null;
     }
 }
