@@ -17,6 +17,16 @@
   <dependencies>
       <dependency>
            <groupId>novemberdobby.teamcity.imageComp</groupId>
+           <artifactId>imageComp-agent</artifactId>
+           <version>1.0-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+           <groupId>novemberdobby.teamcity.imageComp</groupId>
+           <artifactId>imageComp-common</artifactId>
+           <version>1.0-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+           <groupId>novemberdobby.teamcity.imageComp</groupId>
            <artifactId>imageComp-server</artifactId>
            <version>1.0-SNAPSHOT</version>
       </dependency>
@@ -58,6 +68,20 @@
             <artifactId>maven-assembly-plugin</artifactId>
             <version>2.4</version>
             <executions>
+              <execution>
+                <id>make-agent-assembly</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>single</goal>
+                </goals>
+                <configuration>
+                  <finalName>imageComp-agent</finalName>
+                  <appendAssemblyId>false</appendAssemblyId>
+                  <descriptors>
+                    <descriptor>plugin-agent-assembly.xml</descriptor>
+                  </descriptors>
+                </configuration>
+              </execution>
               <execution>
                 <id>make-assembly</id>
                 <phase>package</phase>

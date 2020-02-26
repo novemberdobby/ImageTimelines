@@ -6,10 +6,10 @@
     <groupId>novemberdobby.teamcity.imageComp</groupId>
     <version>1.0-SNAPSHOT</version>
   </parent>
-  <artifactId>imageComp-server</artifactId>
+  <artifactId>imageComp-agent</artifactId>
   <packaging>jar</packaging>
   <dependencies>
-
+    
     <dependency>
       <groupId>novemberdobby.teamcity.imageComp</groupId>
       <artifactId>imageComp-common</artifactId>
@@ -19,16 +19,8 @@
 
     <dependency>
       <groupId>org.jetbrains.teamcity</groupId>
-      <artifactId>server-api</artifactId>
+      <artifactId>agent-api</artifactId>
       <version>${teamcity-version}</version>
-      <scope>provided</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.jetbrains.teamcity</groupId>
-      <artifactId>server-web-api</artifactId>
-      <version>${teamcity-version}</version>
-      <type>war</type>
       <scope>provided</scope>
     </dependency>
 
@@ -47,8 +39,8 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
         <configuration>
-          <source>1.8</source>
-          <target>1.8</target>
+          <source>1.6</source>
+          <target>1.6</target>
         </configuration>
       </plugin>
     </plugins>

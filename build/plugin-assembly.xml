@@ -10,12 +10,17 @@
          <source>target/teamcity-plugin.xml</source>
          <outputDirectory>/</outputDirectory>
      </file> 
+     <file>
+         <source>target/imageComp-agent.zip</source>
+         <outputDirectory>agent</outputDirectory>
+     </file> 
   </files>
   <moduleSets>
     <moduleSet>
        <useAllReactorProjects>true</useAllReactorProjects>
        <includes>
            <include>novemberdobby.teamcity.imageComp:imageComp-server</include>
+           <include>novemberdobby.teamcity.imageComp:imageComp-common</include>
        </includes> 
        <binaries>
            <outputDirectory>server</outputDirectory>

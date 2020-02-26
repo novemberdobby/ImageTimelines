@@ -22,3 +22,11 @@ imageComp-server/.settings/org.eclipse.jdt.core.prefs
 imageComp-server/.settings/org.eclipse.m2e.core.prefs
 
 vscode.code-workspace
+
+imageComp-agent/.settings/
+
+imageComp-common/.settings/
+
+imageComp-common/.classpath
+
+imageComp-agent/.classpath

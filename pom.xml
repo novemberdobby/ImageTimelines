@@ -46,6 +46,8 @@
   </build>
   <modules>
     <module>imageComp-server</module>
+    <module>imageComp-agent</module>
+    <module>imageComp-common</module>
     <module>build</module>
   </modules>
 </project>
