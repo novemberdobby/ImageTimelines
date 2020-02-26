@@ -1,4 +1,4 @@
-package novemberdobby.teamcity.imageComp;
+package novemberdobby.teamcity.imageComp.server;
 
 import java.util.Map;
 
@@ -14,6 +14,8 @@ import jetbrains.buildServer.web.openapi.buildType.BuildTypeTab;
 import jetbrains.buildServer.web.util.SessionUser;
 import jetbrains.buildServer.web.openapi.WebControllerManager;
 import jetbrains.buildServer.serverSide.ProjectManager;
+
+import novemberdobby.teamcity.imageComp.common.Constants;
 
 public class ImagesTab extends BuildTypeTab {
 

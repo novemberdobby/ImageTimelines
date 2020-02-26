@@ -1,14 +1,19 @@
-package novemberdobby.teamcity.imageComp;
+package novemberdobby.teamcity.imageComp.server;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.HashMap;
 
+import jetbrains.buildServer.requirements.Requirement;
+import jetbrains.buildServer.requirements.RequirementType;
 import jetbrains.buildServer.serverSide.BuildFeature;
 import jetbrains.buildServer.serverSide.InvalidProperty;
 import jetbrains.buildServer.serverSide.PropertiesProcessor;
 import jetbrains.buildServer.web.openapi.PluginDescriptor;
+
+import novemberdobby.teamcity.imageComp.common.Constants;
 
 public class ScanFeature extends BuildFeature {
 
@@ -56,6 +61,11 @@ public class ScanFeature extends BuildFeature {
         HashMap<String, String> result = new HashMap<String, String>();
         result.put(Constants.FEATURE_SETTING_ARTIFACTS, "");
         return result;
+    }
+
+    @Override
+    public Collection<Requirement> getRequirements(Map<String, String> params) {
+        return Collections.singleton(new Requirement("image_conversion_tool", "teamcity.tool.maven", null, RequirementType.EXISTS)); //TODO: update to IM
     }
     
     @Override

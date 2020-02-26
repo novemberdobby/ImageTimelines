@@ -1,4 +1,4 @@
-package novemberdobby.teamcity.imageComp;
+package novemberdobby.teamcity.imageComp.common;
 
 public class Constants {
     public static final String TAB_ID = "image_comp_tab";
