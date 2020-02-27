@@ -69,7 +69,7 @@ public class ScanFeature extends BuildFeature {
 
     @Override
     public Collection<Requirement> getRequirements(Map<String, String> params) {
-        return Collections.singleton(new Requirement("image_conversion_tool", "teamcity.tool.maven", null, RequirementType.EXISTS)); //TODO: update to IM
+        return Collections.singleton(new Requirement("image_conversion_tool", Constants.TOOL_PATH_PARAM, null, RequirementType.EXISTS)); //TODO: update to IM
     }
     
     @Override
