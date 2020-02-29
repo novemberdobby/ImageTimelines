@@ -49,7 +49,7 @@ public class Processor extends AgentLifeCycleAdapter {
                 String restrict = "";
 
                 if("tagged".equals(params.get(Constants.FEATURE_SETTING_COMPARE_TYPE))) {
-                    restrict = String.format(",tag:", params.get(Constants.FEATURE_SETTING_TAG));
+                    restrict = String.format(",tag:%s", params.get(Constants.FEATURE_SETTING_TAG));
                 }
 
                 String infoUrl = String.format("%s/httpAuth/app/rest/builds?locator=buildType(internalId:%s),count:1%s", serverUrl, buildIntId, restrict);
@@ -64,7 +64,7 @@ public class Processor extends AgentLifeCycleAdapter {
                 }
                 
                 if(sourceBuildID != -1) {
-                    log.message(String.format("Source build is %s", sourceBuildID));
+                    log.message(String.format("Source build ID is %s", sourceBuildID));
 
                     File tempDir = build.getBuildTempDirectory();
                     List<String> paths = Arrays.asList(pathsParam.split("[\n\r]"));
