@@ -1,9 +1,16 @@
 package novemberdobby.teamcity.imageComp.agent;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathFactory;
+
+import org.w3c.dom.Document;
 
 import jetbrains.buildServer.agent.AgentBuildFeature;
 import jetbrains.buildServer.agent.AgentLifeCycleAdapter;
@@ -14,6 +21,7 @@ import jetbrains.buildServer.agent.BuildProgressLogger;
 import jetbrains.buildServer.util.EventDispatcher;
 
 import novemberdobby.teamcity.imageComp.common.Constants;
+import novemberdobby.teamcity.imageComp.common.Util;
 
 public class Processor extends AgentLifeCycleAdapter {
     
@@ -33,10 +41,33 @@ public class Processor extends AgentLifeCycleAdapter {
             Map<String, String> params = feature.getParameters();
             String pathsParam = params.get(Constants.FEATURE_SETTING_ARTIFACTS);
 
+            //download artifacts from an earlier build to agent temp
+            Long sourceBuildID = -1L;
             if(pathsParam != null) {
-                List<String> paths = Arrays.asList(pathsParam.split("[\n\r]"));
-                for (String path : paths) {
-                    log.message(path);
+                String serverUrl = build.getAgentConfiguration().getServerUrl();
+                String buildIntId = build.getBuildTypeId(); //resist external ID changes
+
+                //TODO: build tag for user-set baseline - vary according to feature params
+                String infoUrl = String.format("%s/httpAuth/app/rest/builds?locator=buildType(internalId:%s),count:1", serverUrl, buildIntId);
+                
+                try {
+                    Document buildsDoc = Util.getRESTdocument(infoUrl, build.getAccessUser(), build.getAccessCode());
+                    XPath xpath = XPathFactory.newInstance().newXPath();
+                    sourceBuildID = Long.parseLong((String)xpath.evaluate("/builds/build/@id", buildsDoc, XPathConstants.STRING));
+                } catch (Exception e) {
+                    log.error(e.toString());
+                }
+                
+                if(sourceBuildID != -1) {
+                    log.message("Source build is %s");
+
+                    File tempDir = build.getBuildTempDirectory();
+                    List<String> paths = Arrays.asList(pathsParam.split("[\n\r]"));
+                    for (String path : paths) {
+                        log.message(String.format("Downloading %s", path));
+                    }
+                } else {
+                    log.equals("Skipping downloads due to errors");
                 }
             }
         }
