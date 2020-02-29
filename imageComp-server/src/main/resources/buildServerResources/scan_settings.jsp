@@ -37,6 +37,7 @@
         <bs:agentArtifactsTree fieldId="${paths_list}" buildTypeId="${buildForm.externalId}"/>
       </jsp:attribute>
     </props:multilineProperty>
+    <span class="error" id="error_${paths_list}"></span>
   </td>
 </tr>
 

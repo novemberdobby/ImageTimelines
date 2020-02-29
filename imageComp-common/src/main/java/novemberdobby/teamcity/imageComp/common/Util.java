@@ -1,6 +1,9 @@
 package novemberdobby.teamcity.imageComp.common;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
 
@@ -31,5 +34,18 @@ public class Util {
         URLConnection connection = urlObj.openConnection();
         connection.setRequestProperty("Authorization", authStr);
         return connection;
+    }
+
+    public static void downloadFile(URLConnection connection, File saveToFile) throws IOException {
+        try (
+            InputStream inStream = connection.getInputStream(); //in from connection
+            FileOutputStream outStream = new FileOutputStream(saveToFile); //out to file
+        ) {
+            int read;
+            byte[] buffer = new byte[2048];
+            while((read = inStream.read(buffer)) != -1) {
+                outStream.write(buffer, 0, read);
+            }
+        }
     }
 }

@@ -1,10 +1,14 @@
 package novemberdobby.teamcity.imageComp.server;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 
 import jetbrains.buildServer.requirements.Requirement;
 import jetbrains.buildServer.requirements.RequirementType;
@@ -90,6 +94,14 @@ public class ScanFeature extends BuildFeature {
             ArrayList<InvalidProperty> result = new ArrayList<InvalidProperty>();
 
             //TODO: bad syntax on paths? each should be a single file
+            
+            //check for duplicates - it could still be broken if they really tried, via parameters with the same values
+            String pathSettings = params.get(Constants.FEATURE_SETTING_ARTIFACTS);
+            List<String> paths = Arrays.asList(pathSettings.split("[\n\r]"));
+            Set<String> pathsSet = new HashSet<String>(paths);
+            if(paths.size() != pathsSet.size()) {
+                result.add(new InvalidProperty(Constants.FEATURE_SETTING_ARTIFACTS, String.format("Paths list cannot contain duplicates, %s found", paths.size() - pathsSet.size())));
+            }
 
             //check tag, note that this doesn't guarantee it'll be valid
             if("tagged".equals(params.get(Constants.FEATURE_SETTING_COMPARE_TYPE))) {

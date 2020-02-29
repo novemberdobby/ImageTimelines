@@ -1,8 +1,10 @@
 package novemberdobby.teamcity.imageComp.agent;
 
 import java.io.File;
+import java.net.URLConnection;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -10,6 +12,7 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathFactory;
 
+import org.apache.commons.io.FilenameUtils;
 import org.w3c.dom.Document;
 
 import jetbrains.buildServer.agent.AgentBuildFeature;
@@ -66,10 +69,35 @@ public class Processor extends AgentLifeCycleAdapter {
                 if(sourceBuildID != -1) {
                     log.message(String.format("Source build ID is %s", sourceBuildID));
 
-                    File tempDir = build.getBuildTempDirectory();
+                    File tempDir = new File(build.getBuildTempDirectory(), "image_comp");
+                    tempDir.mkdir();
+
                     List<String> paths = Arrays.asList(pathsParam.split("[\n\r]"));
+                    Map<String, String> stored = new HashMap<>();
+
+                    int idx = -1;
                     for (String path : paths) {
-                        log.message(String.format("Downloading %s", path));
+                        idx++;
+                        String extension = FilenameUtils.getExtension(path);
+                        if(extension == null || extension.length() == 0) {
+                            log.error(String.format("Missing extension for artifact: %s", path)); //we need this or the tools won't know what to do!
+                            continue;
+                        }
+
+                        File target = new File(tempDir, String.format("%s.%s", idx, extension));
+                        log.message(String.format("Downloading %s to %s", path, target.getAbsolutePath()));
+
+                        String downloadUrl = String.format("%s/httpAuth/app/rest/builds/%s/artifacts/content/%s", serverUrl, sourceBuildID, path);
+                        try {
+                            URLConnection connection = Util.webRequest(downloadUrl, build.getAccessUser(), build.getAccessCode());
+                            Util.downloadFile(connection, target);
+                        } catch (Exception e) {
+                            log.error("Download failed:");
+                            log.error(e.toString());
+                            continue;
+                        }
+
+                        stored.put(path, target.getAbsolutePath());
                     }
                 } else {
                     log.error("Skipping downloads due to errors");
