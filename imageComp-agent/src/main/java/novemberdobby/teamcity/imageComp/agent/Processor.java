@@ -46,9 +46,13 @@ public class Processor extends AgentLifeCycleAdapter {
             if(pathsParam != null) {
                 String serverUrl = build.getAgentConfiguration().getServerUrl();
                 String buildIntId = build.getBuildTypeId(); //resist external ID changes
+                String restrict = "";
 
-                //TODO: build tag for user-set baseline - vary according to feature params
-                String infoUrl = String.format("%s/httpAuth/app/rest/builds?locator=buildType(internalId:%s),count:1", serverUrl, buildIntId);
+                if("tagged".equals(params.get(Constants.FEATURE_SETTING_COMPARE_TYPE))) {
+                    restrict = String.format(",tag:", params.get(Constants.FEATURE_SETTING_TAG));
+                }
+
+                String infoUrl = String.format("%s/httpAuth/app/rest/builds?locator=buildType(internalId:%s),count:1%s", serverUrl, buildIntId, restrict);
                 
                 try {
                     Document buildsDoc = Util.getRESTdocument(infoUrl, build.getAccessUser(), build.getAccessCode());
@@ -56,10 +60,11 @@ public class Processor extends AgentLifeCycleAdapter {
                     sourceBuildID = Long.parseLong((String)xpath.evaluate("/builds/build/@id", buildsDoc, XPathConstants.STRING));
                 } catch (Exception e) {
                     log.error(e.toString());
+                    log.error("This may mean that no suitable build is available to compare against");
                 }
                 
                 if(sourceBuildID != -1) {
-                    log.message("Source build is %s");
+                    log.message(String.format("Source build is %s", sourceBuildID));
 
                     File tempDir = build.getBuildTempDirectory();
                     List<String> paths = Arrays.asList(pathsParam.split("[\n\r]"));
@@ -67,7 +72,7 @@ public class Processor extends AgentLifeCycleAdapter {
                         log.message(String.format("Downloading %s", path));
                     }
                 } else {
-                    log.equals("Skipping downloads due to errors");
+                    log.error("Skipping downloads due to errors");
                 }
             }
         }
