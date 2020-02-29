@@ -49,7 +49,12 @@ public class ScanFeature extends BuildFeature {
         StringBuilder sb = new StringBuilder();
         String paths = params.get(Constants.FEATURE_SETTING_ARTIFACTS);
         
-        sb.append("Generate comparisons for:\r\n");
+        sb.append("Generate comparisons to the last finished build");
+        if("tagged".equals(params.get(Constants.FEATURE_SETTING_COMPARE_TYPE))) {
+            sb.append(String.format(" with tag '%s'", params.get(Constants.FEATURE_SETTING_TAG)));
+        }
+
+        sb.append(" for:\r\n");
         if(paths == null) {
             sb.append("<none>");
         } else {
@@ -80,11 +85,19 @@ public class ScanFeature extends BuildFeature {
     static class FeatureValidator implements PropertiesProcessor {
         
         @Override
-        public Collection<InvalidProperty> process(Map<String, String> input) {
+        public Collection<InvalidProperty> process(Map<String, String> params) {
             
             ArrayList<InvalidProperty> result = new ArrayList<InvalidProperty>();
 
-            //TODO: what could make them invalid? bad syntax on paths?
+            //TODO: bad syntax on paths? each should be a single file
+
+            //check tag, note that this doesn't guarantee it'll be valid
+            if("tagged".equals(params.get(Constants.FEATURE_SETTING_COMPARE_TYPE))) {
+                String tag = params.get(Constants.FEATURE_SETTING_TAG);
+                if(tag == null || tag.length() == 0 || tag.contains(" ")) {
+                    result.add(new InvalidProperty(Constants.FEATURE_SETTING_TAG, "Invalid tag - must be a valid string with no spaces"));
+                }
+            }
 
             return result;
         }
