@@ -10,6 +10,8 @@ public class Constants {
     public static final String FEATURE_SETTING_ARTIFACTS = "artifact_paths";
     public static final String FEATURE_SETTING_COMPARE_TYPE = "compare_type";
     public static final String FEATURE_SETTING_TAG = "tag_name";
+    public static final String FEATURE_SETTING_HIDDEN_REQ_IM = "hidden_req_im";
 
-    public static final String TOOL_PATH_PARAM = "teamcity.tool.maven";
+    public static final String TOOL_IM_PATH_PARAM = "teamcity.tool.ImageMagick";
+    public static final String TOOL_BC_PATH_PARAM = "teamcity.tool.BeyondCompare";
 }

@@ -8,6 +8,9 @@
 <c:set var="paths_list" value="<%=Constants.FEATURE_SETTING_ARTIFACTS%>"/>
 <c:set var="compare_type" value="<%=Constants.FEATURE_SETTING_COMPARE_TYPE%>"/>
 <c:set var="tag_name" value="<%=Constants.FEATURE_SETTING_TAG%>"/>
+<c:set var="hidden_agent_req_im" value="<%=Constants.FEATURE_SETTING_HIDDEN_REQ_IM%>"/>
+
+<c:set var="hidden_agent_req_im_value" value="<%=Constants.TOOL_IM_PATH_PARAM%>"/>
 
 <jsp:useBean id="buildForm"  scope="request" type="jetbrains.buildServer.controllers.admin.projects.EditableBuildTypeSettingsForm"/>
 
@@ -33,13 +36,22 @@
   <th>Images:</th>
   <td>
     <props:multilineProperty name="${paths_list}" rows="5" cols="70" linkTitle="" expanded="true" note="Artifacts to process for each build">
-      <jsp:attribute name="afterTextField">
+      <%--TODO: list artifacts from last build or something - won't work for files inside zips tho--%>
+      <%--<jsp:attribute name="afterTextField">
         <bs:agentArtifactsTree fieldId="${paths_list}" buildTypeId="${buildForm.externalId}"/>
-      </jsp:attribute>
+      </jsp:attribute>--%>
     </props:multilineProperty>
     <span class="error" id="error_${paths_list}"></span>
   </td>
 </tr>
+
+<%--
+  add a hidden property to reference a required tool. build feature requirements aren't enough to make an agent download the tool.
+  placed in a div to hide the params dropdown button
+--%>
+<div style="display: none">
+  <props:textProperty name="${hidden_agent_req_im}" value="%${hidden_agent_req_im_value}%"/>
+</div>
 
 <script type="text/javascript">
 
@@ -58,6 +70,8 @@
         BS.Util.hide('imagecomp.type.custom.tag');
       }
       
+      //in case the value changes - re-set every time so worst case people only have to re-confirm their feature settings
+      $('${hidden_agent_req_im}').value = "%${hidden_agent_req_im_value}%";
       BS.MultilineProperties.updateVisible();
     }
   };

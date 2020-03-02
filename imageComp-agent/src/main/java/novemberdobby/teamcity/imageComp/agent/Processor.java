@@ -1,12 +1,15 @@
 package novemberdobby.teamcity.imageComp.agent;
 
 import java.io.File;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.net.URLConnection;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
@@ -20,6 +23,7 @@ import jetbrains.buildServer.agent.AgentLifeCycleAdapter;
 import jetbrains.buildServer.agent.AgentLifeCycleListener;
 import jetbrains.buildServer.agent.AgentRunningBuild;
 import jetbrains.buildServer.agent.BuildFinishedStatus;
+import jetbrains.buildServer.agent.BuildParametersMap;
 import jetbrains.buildServer.agent.BuildProgressLogger;
 import jetbrains.buildServer.util.EventDispatcher;
 
@@ -73,7 +77,7 @@ public class Processor extends AgentLifeCycleAdapter {
                     tempDir.mkdir();
 
                     List<String> paths = Arrays.asList(pathsParam.split("[\n\r]"));
-                    Map<String, String> stored = new HashMap<>();
+                    Map<String, File> storedItems = new HashMap<>();
 
                     int idx = -1;
                     for (String path : paths) {
@@ -97,8 +101,39 @@ public class Processor extends AgentLifeCycleAdapter {
                             continue;
                         }
 
-                        stored.put(path, target.getAbsolutePath());
+                        storedItems.put(path, target);
                     }
+
+                    //now we've got as many as we can, iterate and do the comparisons
+                    //first get the files we just published as artifacts. find them in the local artifact cache - if that fails, redownload from server (we can't find out their pre-publish workspace paths)
+                    File cache = build.getAgentConfiguration().getCacheDirectory(".artifacts_cache");
+                    URL serverUrlObj = null;
+                    try {
+                        serverUrlObj = new URL(serverUrl);
+                    } catch (MalformedURLException e) {
+                        log.error("Failed to create URL object from server url (this really shouldn't happen)");
+                        return;
+                    }
+                    
+                    //e.g. C:\TeamCity\buildAgent\system\.artifacts_cache\localhost_80\httpAuth\repository\download\ConfigA\6466.tcbuildid
+                    File buildCachePath = new File(String.format("%s\\%s_%s\\httpAuth\\repository\\download\\%s\\%s.tcbuildid",
+                        cache, serverUrlObj.getHost(), serverUrlObj.getPort(), build.getBuildTypeExternalId(), build.getBuildId()));
+                    
+                    if(!buildCachePath.exists()) {
+                        log.error(String.format("Couldn't find cache path: %s", buildCachePath.getAbsolutePath())); //TODO: warning & fall back to server download
+                        return;
+                    }
+                    
+                    log.message(String.format("Found artifacts cache: %s", buildCachePath.getAbsolutePath()));
+                    for (Entry<String, File> stored : storedItems.entrySet()) {
+                        File cachedFile = new File(buildCachePath, stored.getKey());
+                        if(cachedFile.exists()) {
+                            compare(build, stored.getKey(), stored.getValue(), cachedFile);
+                        } else {
+                            log.message(String.format("Couldn't find file in cache: %s", cachedFile.getAbsolutePath()));
+                        }
+                    }
+
                 } else {
                     log.error("Skipping downloads due to errors");
                 }
@@ -106,5 +141,14 @@ public class Processor extends AgentLifeCycleAdapter {
         }
 
         log.activityFinished(blockMsg, "CUSTOM_IMAGE_COMP");
+    }
+
+    void compare(AgentRunningBuild build, String artifactName, File referenceImage, File newImage) {
+        BuildProgressLogger log = build.getBuildLogger();
+        
+        //TODO: numbers & TC statistic
+        //TODO: produce comparison image artifact
+        //TODO: beyond compare diff report option - can an agent requirement be optional based on whether it's enabled? won't work with the hidden prop hack
+        //TODO: non-windows agent support
     }
 }
