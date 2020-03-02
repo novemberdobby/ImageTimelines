@@ -6,6 +6,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 import javax.xml.bind.DatatypeConverter;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -47,5 +51,14 @@ public class Util {
                 outStream.write(buffer, 0, read);
             }
         }
+    }
+
+    public static List<String> getCompareTypes(Map<String, String> params) {
+        String typesStr = params.get(Constants.FEATURE_SETTING_DIFF_METRIC);
+        if(typesStr != null) {
+            return Arrays.asList(typesStr.toUpperCase().split(",", 0));
+        }
+
+        return Collections.emptyList();
     }
 }

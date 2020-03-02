@@ -18,6 +18,7 @@ import jetbrains.buildServer.serverSide.PropertiesProcessor;
 import jetbrains.buildServer.web.openapi.PluginDescriptor;
 
 import novemberdobby.teamcity.imageComp.common.Constants;
+import novemberdobby.teamcity.imageComp.common.Util;
 
 public class ScanFeature extends BuildFeature {
 
@@ -57,13 +58,16 @@ public class ScanFeature extends BuildFeature {
         if("tagged".equals(params.get(Constants.FEATURE_SETTING_COMPARE_TYPE))) {
             sb.append(String.format(" with tag '%s'", params.get(Constants.FEATURE_SETTING_TAG)));
         }
-
+        
         sb.append(" for:\r\n");
         if(paths == null) {
             sb.append("<none>");
         } else {
             sb.append(paths);
         }
+        
+        sb.append("\r\n\r\n");
+        sb.append(String.format("Compare using methods: %s", String.join(", ", Util.getCompareTypes(params))));
         
         return sb.toString();
     }
@@ -73,6 +77,7 @@ public class ScanFeature extends BuildFeature {
         
         HashMap<String, String> result = new HashMap<String, String>();
         result.put(Constants.FEATURE_SETTING_ARTIFACTS, "");
+        result.put(Constants.FEATURE_SETTING_DIFF_METRIC, Constants.FEATURE_SETTING_DIFF_METRIC_DEFAULT);
         return result;
     }
 
@@ -100,10 +105,14 @@ public class ScanFeature extends BuildFeature {
             
             //check for duplicates - it could still be broken if they really tried, via parameters with the same values
             String pathSettings = params.get(Constants.FEATURE_SETTING_ARTIFACTS);
-            List<String> paths = Arrays.asList(pathSettings.split("[\n\r]"));
-            Set<String> pathsSet = new HashSet<String>(paths);
-            if(paths.size() != pathsSet.size()) {
-                result.add(new InvalidProperty(Constants.FEATURE_SETTING_ARTIFACTS, String.format("Paths list cannot contain duplicates, %s found", paths.size() - pathsSet.size())));
+            if(pathSettings != null) {
+                List<String> paths = Arrays.asList(pathSettings.split("[\n\r]"));
+                Set<String> pathsSet = new HashSet<String>(paths);
+                if(paths.size() != pathsSet.size()) {
+                    result.add(new InvalidProperty(Constants.FEATURE_SETTING_ARTIFACTS, String.format("Paths list cannot contain duplicates, %s found", paths.size() - pathsSet.size())));
+                }
+            } else {
+                result.add(new InvalidProperty(Constants.FEATURE_SETTING_ARTIFACTS, "Paths list cannot be empty"));
             }
 
             //check tag, note that this doesn't guarantee it'll be valid
@@ -112,6 +121,11 @@ public class ScanFeature extends BuildFeature {
                 if(tag == null || tag.length() == 0 || tag.contains(" ")) {
                     result.add(new InvalidProperty(Constants.FEATURE_SETTING_TAG, "Invalid tag - must be a valid string with no spaces"));
                 }
+            }
+
+            String diffMetric = params.get(Constants.FEATURE_SETTING_DIFF_METRIC);
+            if(diffMetric == null || diffMetric == "") {
+                result.add(new InvalidProperty(Constants.FEATURE_SETTING_DIFF_METRIC, "One or more diff metrics must be selected"));
             }
 
             return result;

@@ -23,7 +23,6 @@ import jetbrains.buildServer.agent.AgentLifeCycleAdapter;
 import jetbrains.buildServer.agent.AgentLifeCycleListener;
 import jetbrains.buildServer.agent.AgentRunningBuild;
 import jetbrains.buildServer.agent.BuildFinishedStatus;
-import jetbrains.buildServer.agent.BuildParametersMap;
 import jetbrains.buildServer.agent.BuildProgressLogger;
 import jetbrains.buildServer.util.EventDispatcher;
 
@@ -128,7 +127,7 @@ public class Processor extends AgentLifeCycleAdapter {
                     for (Entry<String, File> stored : storedItems.entrySet()) {
                         File cachedFile = new File(buildCachePath, stored.getKey());
                         if(cachedFile.exists()) {
-                            compare(build, stored.getKey(), stored.getValue(), cachedFile);
+                            compare(build, params, stored.getKey(), stored.getValue(), cachedFile);
                         } else {
                             log.message(String.format("Couldn't find file in cache: %s", cachedFile.getAbsolutePath()));
                         }
@@ -143,12 +142,26 @@ public class Processor extends AgentLifeCycleAdapter {
         log.activityFinished(blockMsg, "CUSTOM_IMAGE_COMP");
     }
 
-    void compare(AgentRunningBuild build, String artifactName, File referenceImage, File newImage) {
+    void compare(AgentRunningBuild build, Map<String, String> params, String artifactName, File referenceImage, File newImage) {
         BuildProgressLogger log = build.getBuildLogger();
         
+        DiffResult basicDiff = imageMagickDiff(referenceImage, newImage);
+        //TODO: artifact it
         //TODO: numbers & TC statistic
         //TODO: produce comparison image artifact
         //TODO: beyond compare diff report option - can an agent requirement be optional based on whether it's enabled? won't work with the hidden prop hack
         //TODO: non-windows agent support
+        //TODO: need to mark a build with the baseline it was compared against so there's no confusion if options change
+    }
+
+    //TODO: put this in common module so server can run it for arbitrary builds
+    DiffResult imageMagickDiff(File referenceImage, File newImage) {
+        //TODO: magick compare -metric X -compose src A.jpg B.jpg difference.png
+        return null;
+    }
+
+    static class DiffResult {
+        public String DifferenceFilename;
+        public Double DifferenceAmount;
     }
 }
