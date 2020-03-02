@@ -48,6 +48,7 @@
 <%--
   add a hidden property to reference a required tool. build feature requirements aren't enough to make an agent download the tool.
   placed in a div to hide the params dropdown button
+  TODO: remove once https://youtrack.jetbrains.com/issue/TW-64761 is fixed
 --%>
 <div style="display: none">
   <props:textProperty name="${hidden_agent_req_im}" value="%${hidden_agent_req_im_value}%"/>
