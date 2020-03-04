@@ -69,7 +69,8 @@
 <tr class="noBorder">
   <th>Images:</th>
   <td>
-    <props:multilineProperty name="${paths_list}" rows="5" cols="70" linkTitle="" expanded="true" note="Artifacts to process for each build">
+    <c:set var="text">Artifacts to process for each build. Use <strong>archive.zip!/image.jpg</strong> to access archives</c:set>
+    <props:multilineProperty name="${paths_list}" rows="5" cols="70" linkTitle="" expanded="true" note="${text}">
       <%--TODO: list artifacts from last build or something - won't work for files inside zips tho--%>
       <%--<jsp:attribute name="afterTextField">
         <bs:agentArtifactsTree fieldId="${paths_list}" buildTypeId="${buildForm.externalId}"/>

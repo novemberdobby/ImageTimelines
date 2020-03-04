@@ -5,6 +5,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -66,7 +68,7 @@ public class ScanFeature extends BuildFeature {
         }
         
         sb.append("\r\n\r\n");
-        sb.append(String.format("Compare using methods: %s", String.join(", ", Util.getCompareMetrics(params))));
+        sb.append(String.format("Compare using methods: %s", String.join(", ", Util.getCompareMetrics(params)).toUpperCase()));
         
         return sb.toString();
     }
@@ -104,8 +106,6 @@ public class ScanFeature extends BuildFeature {
         public Collection<InvalidProperty> process(Map<String, String> params) {
             
             ArrayList<InvalidProperty> result = new ArrayList<InvalidProperty>();
-
-            //TODO: bad syntax on paths? each should be a single file
             
             //check for duplicates - it could still be broken if they really tried, via parameters with the same values
             String pathSettings = params.get(Constants.FEATURE_SETTING_ARTIFACTS);
@@ -114,6 +114,14 @@ public class ScanFeature extends BuildFeature {
                 Set<String> pathsSet = new HashSet<String>(paths);
                 if(paths.size() != pathsSet.size()) {
                     result.add(new InvalidProperty(Constants.FEATURE_SETTING_ARTIFACTS, String.format("Paths list cannot contain duplicates, %s found", paths.size() - pathsSet.size())));
+                }
+
+                Pattern checkArchives = Pattern.compile("![^/]");
+                for (String path : paths) {
+                    Matcher mtch = checkArchives.matcher(path);
+                    if(mtch.find()) {
+                        result.add(new InvalidProperty(Constants.FEATURE_SETTING_ARTIFACTS, String.format("Paths inside archives must contain '!/', see note (%s)", path)));
+                    }
                 }
             } else {
                 result.add(new InvalidProperty(Constants.FEATURE_SETTING_ARTIFACTS, "Paths list cannot be empty"));
