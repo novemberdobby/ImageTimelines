@@ -67,7 +67,7 @@ public class ScanFeature extends BuildFeature {
         }
         
         sb.append("\r\n\r\n");
-        sb.append(String.format("Compare using methods: %s", String.join(", ", Util.getCompareTypes(params))));
+        sb.append(String.format("Compare using methods: %s", String.join(", ", Util.getCompareMetrics(params))));
         
         return sb.toString();
     }
@@ -86,7 +86,12 @@ public class ScanFeature extends BuildFeature {
         //TODO: instructions for IM tool install in readme https://imagemagick.org/download/binaries/ImageMagick-7.0.9-27-portable-Q16-x64.zip
         //TODO: instructions for BC tool install in readme
         //always require ImageMagick, but decide whether or not to use Beyond Compare at runtime (if it's installed)
-        return Collections.singleton(new Requirement("image_conversion_tool", Constants.TOOL_IM_PATH_PARAM, null, RequirementType.EXISTS));
+        List<Requirement> reqs = new ArrayList<>();
+        reqs.add(new Requirement("image_conversion_tool", Constants.TOOL_IM_PATH_PARAM, null, RequirementType.EXISTS));
+
+        //cheeky hack until non-windows agents are supported
+        reqs.add(new Requirement("image_conversion_tool_platform", "env.ProgramFiles", null, RequirementType.EXISTS));
+        return reqs;
     }
     
     @Override

@@ -53,10 +53,10 @@ public class Util {
         }
     }
 
-    public static List<String> getCompareTypes(Map<String, String> params) {
+    public static List<String> getCompareMetrics(Map<String, String> params) {
         String typesStr = params.get(Constants.FEATURE_SETTING_DIFF_METRIC);
         if(typesStr != null) {
-            return Arrays.asList(typesStr.toUpperCase().split(",", 0));
+            return Arrays.asList(typesStr.toLowerCase().split(",", 0));
         }
 
         return Collections.emptyList();
