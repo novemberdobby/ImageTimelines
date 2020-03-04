@@ -189,13 +189,14 @@ public class Processor extends AgentLifeCycleAdapter {
             }
         }
 
-        //TODO: optional
-        //TODO: expand canvas and write 'before/after' at the top
-        String artifactNameFlicker = String.format("%s_flicker.gif", FilenameUtils.removeExtension(artifactName));
-        File tempFlickerImage = new File(diffImagesTemp, artifactNameFlicker);
+        if("true".equals(params.get(Constants.FEATURE_SETTING_GENERATE_GIF))) {
+            //TODO: expand canvas and write 'before/after' at the top w/changelists
+            String artifactNameFlicker = String.format("%s_flicker.gif", FilenameUtils.removeExtension(artifactName));
+            File tempFlickerImage = new File(diffImagesTemp, artifactNameFlicker);
 
-        if(imageMagickFlicker(magick, referenceImage, newImage, tempFlickerImage)) {
-            log.message(String.format("##teamcity[publishArtifacts '%s => %s']", tempFlickerImage.getAbsolutePath(), Constants.ARTIFACTS_RESULT_PATH));
+            if(imageMagickFlicker(magick, referenceImage, newImage, tempFlickerImage)) {
+                log.message(String.format("##teamcity[publishArtifacts '%s => %s']", tempFlickerImage.getAbsolutePath(), Constants.ARTIFACTS_RESULT_PATH));
+            }
         }
 
         //TODO: unlikely to work well with similarly named files in different places in artifacts

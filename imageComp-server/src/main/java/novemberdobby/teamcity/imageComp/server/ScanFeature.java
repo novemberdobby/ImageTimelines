@@ -79,6 +79,7 @@ public class ScanFeature extends BuildFeature {
         HashMap<String, String> result = new HashMap<String, String>();
         result.put(Constants.FEATURE_SETTING_ARTIFACTS, "");
         result.put(Constants.FEATURE_SETTING_DIFF_METRIC, Constants.FEATURE_SETTING_DIFF_METRIC_DEFAULT);
+        result.put(Constants.FEATURE_SETTING_GENERATE_GIF, "true");
         return result;
     }
 
