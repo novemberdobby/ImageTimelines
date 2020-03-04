@@ -13,6 +13,7 @@ public class Constants {
     public static final String FEATURE_SETTING_DIFF_METRIC = "diff_type";
     public static final String FEATURE_SETTING_DIFF_METRIC_DEFAULT = "dssim";
     public static final String FEATURE_SETTING_HIDDEN_REQ_IM = "hidden_req_im";
+    public static final String FEATURE_SETTING_GENERATE_GIF = "generate_gif";
 
     public static final String TOOL_IM_PATH_PARAM = "teamcity.tool.ImageMagick";
     public static final String TOOL_BC_PATH_PARAM = "teamcity.tool.BeyondCompare";
