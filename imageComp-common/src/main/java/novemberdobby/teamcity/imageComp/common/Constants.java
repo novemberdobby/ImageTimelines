@@ -16,4 +16,6 @@ public class Constants {
 
     public static final String TOOL_IM_PATH_PARAM = "teamcity.tool.ImageMagick";
     public static final String TOOL_BC_PATH_PARAM = "teamcity.tool.BeyondCompare";
+    
+    public static final String ARTIFACTS_RESULT_PATH = "image_comparisons";
 }

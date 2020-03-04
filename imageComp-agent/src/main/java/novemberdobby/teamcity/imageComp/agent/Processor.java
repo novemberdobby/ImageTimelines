@@ -164,7 +164,7 @@ public class Processor extends AgentLifeCycleAdapter {
         //make a new folder to ensure we don't step on any inputs
         File diffImagesTemp = new File(build.getBuildTempDirectory(), "image_comp_diffs");
         diffImagesTemp.mkdir();
-
+        
         List<String> metrics = Util.getCompareMetrics(params);
         for (String metric : metrics) {
             //each time we invoke compare, we *have* to produce a diff image. these are identical regardless of which metric is used.
@@ -179,8 +179,10 @@ public class Processor extends AgentLifeCycleAdapter {
             if(diff.Success) {
                 log.message(String.format("Result for %s: %s", metric.toUpperCase(), diff.DifferenceAmount));
                 if(first) {
-                    log.message(String.format("##teamcity[publishArtifacts '%s => image_comparisons']", tempDiffImage.getAbsolutePath()));
+                    log.message(String.format("##teamcity[publishArtifacts '%s => %s']", tempDiffImage.getAbsolutePath(), Constants.ARTIFACTS_RESULT_PATH));
                 }
+                //TODO: add note in readme, listing on build finished page only shows to 2 dp but graphs show full value. check /httpAuth/app/rest/builds/id:X/statistics
+                log.message(String.format("##teamcity[buildStatisticValue key='ic_%s_%s' value='%.6f']", FilenameUtils.removeExtension(artifactName), metric, diff.DifferenceAmount));
             } else {
                 log.error(String.format("Result for %s: %s", metric.toUpperCase(), diff.StandardOut));
             }
@@ -192,7 +194,7 @@ public class Processor extends AgentLifeCycleAdapter {
         File tempFlickerImage = new File(diffImagesTemp, artifactNameFlicker);
 
         if(imageMagickFlicker(magick, referenceImage, newImage, tempFlickerImage)) {
-            log.message(String.format("##teamcity[publishArtifacts '%s => image_comparisons']", tempFlickerImage.getAbsolutePath()));
+            log.message(String.format("##teamcity[publishArtifacts '%s => %s']", tempFlickerImage.getAbsolutePath(), Constants.ARTIFACTS_RESULT_PATH));
         }
 
         //TODO: unlikely to work well with similarly named files in different places in artifacts
@@ -242,7 +244,7 @@ public class Processor extends AgentLifeCycleAdapter {
         CommandLine cmdLine = new CommandLine(toolPath.getAbsolutePath());
         cmdLine.addArgument("convert");
         cmdLine.addArgument("-delay");
-        cmdLine.addArgument("50");
+        cmdLine.addArgument("100");
         cmdLine.addArgument(referenceImage.getAbsolutePath());
         cmdLine.addArgument(newImage.getAbsolutePath());
         cmdLine.addArgument("-loop");
