@@ -210,6 +210,8 @@ public class Processor extends AgentLifeCycleAdapter {
 
             if(imageMagickGif(magick, images, annotations, tempGifImage)) {
                 log.message(String.format("##teamcity[publishArtifacts '%s => %s']", tempGifImage.getAbsolutePath(), Constants.ARTIFACTS_RESULT_PATH));
+            } else {
+                log.error(String.format("Gif creation failed for %s", tempGifImage.getAbsolutePath()));
             }
         }
 
@@ -267,7 +269,7 @@ public class Processor extends AgentLifeCycleAdapter {
             try {
                 executor.execute(cmdLine);
             } catch (Exception e) {
-                return false; //TODO better feedback
+                return false;
             }
 
             outStream.reset();
@@ -285,7 +287,7 @@ public class Processor extends AgentLifeCycleAdapter {
             executor.execute(cmdLine);
             return true;
         } catch (Exception e) {
-            return false; //TODO better feedback
+            return false;
         }
     }
 }
