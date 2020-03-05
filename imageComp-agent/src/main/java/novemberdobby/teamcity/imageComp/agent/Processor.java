@@ -20,6 +20,7 @@ import org.apache.commons.exec.CommandLine;
 import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.exec.ExecuteWatchdog;
 import org.apache.commons.exec.PumpStreamHandler;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.w3c.dom.Document;
 
@@ -79,29 +80,29 @@ public class Processor extends AgentLifeCycleAdapter {
                     log.error("This may mean that no suitable build is available to compare against");
                 }
                 
+                File tempDir = new File(build.getBuildTempDirectory(), "image_comp_sources");
+                tempDir.mkdir();
+
                 if(referenceBuildID != -1) {
                     log.message(String.format("Reference build ID is %s", referenceBuildID));
-
-                    File tempDir = new File(build.getBuildTempDirectory(), "image_comp_sources");
-                    tempDir.mkdir();
 
                     List<String> paths = Arrays.asList(pathsParam.split("[\n\r]"));
                     Map<String, File> storedItems = new HashMap<>();
 
                     int idx = -1;
-                    for (String path : paths) {
+                    for (String artifact : paths) {
                         idx++;
-                        String extension = FilenameUtils.getExtension(path);
+                        String extension = FilenameUtils.getExtension(artifact);
                         if(extension == null || extension.length() == 0) {
-                            log.error(String.format("Missing extension for artifact: %s", path)); //we need this or the tools won't know what to do!
+                            log.error(String.format("Missing extension for artifact: %s", artifact)); //we need this or the tools won't know what to do!
                             continue;
                         }
 
                         File target = new File(tempDir, String.format("%s.%s", idx, extension));
-                        log.message(String.format("Downloading %s to %s", path, target.getAbsolutePath()));
+                        log.message(String.format("Downloading %s to %s", artifact, target.getAbsolutePath()));
 
                         //note: this creates an artifact dependency, the server matches our credentials with the source build to create the link
-                        String downloadUrl = String.format("%s/httpAuth/app/rest/builds/%s/artifacts/content/%s", serverUrl, referenceBuildID, path);
+                        String downloadUrl = String.format("%s/httpAuth/app/rest/builds/%s/artifacts/content/%s", serverUrl, referenceBuildID, artifact);
                         try {
                             URLConnection connection = Util.webRequest(downloadUrl, build.getAccessUser(), build.getAccessCode());
                             Util.downloadFile(connection, target);
@@ -111,7 +112,7 @@ public class Processor extends AgentLifeCycleAdapter {
                             continue;
                         }
 
-                        storedItems.put(path, target);
+                        storedItems.put(artifact, target);
                     }
 
                     //now we've got as many as we can, iterate and do the comparisons
@@ -138,7 +139,16 @@ public class Processor extends AgentLifeCycleAdapter {
                     for (Entry<String, File> stored : storedItems.entrySet()) {
                         File cachedFile = new File(buildCachePath, stored.getKey());
                         if(cachedFile.exists()) {
-                            compare(build, params, stored.getKey(), stored.getValue(), referenceBuildNumber, cachedFile);
+                            //we can potentially modify images in the cache, so copy them elsewhere first (preserve ext for magick)
+                            File tempCacheCopy = new File(tempDir, String.format("_cache_temp.%s", FilenameUtils.getExtension(cachedFile.getAbsolutePath())));
+                            try {
+                                FileUtils.copyFile(cachedFile, tempCacheCopy, false);
+                            } catch (Exception e) {
+                                log.error(String.format("Couldn't create temp file from cache item: %s (%s)", cachedFile.getAbsolutePath(), tempCacheCopy.getAbsolutePath()));
+                                continue;
+                            }
+
+                            compare(build, params, stored.getKey(), stored.getValue(), referenceBuildNumber, tempCacheCopy);
                         } else {
                             log.error(String.format("Couldn't find file in cache: %s", cachedFile.getAbsolutePath()));
                         }
