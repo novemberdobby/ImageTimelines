@@ -56,7 +56,8 @@ public class Processor extends AgentLifeCycleAdapter {
             String pathsParam = params.get(Constants.FEATURE_SETTING_ARTIFACTS);
 
             //download artifacts from an earlier build to agent temp
-            Long sourceBuildID = -1L;
+            Long referenceBuildID = -1L;
+            String referenceBuildNumber = "";
             if(pathsParam != null) {
                 String serverUrl = build.getAgentConfiguration().getServerUrl();
                 String buildIntId = build.getBuildTypeId(); //resist external ID changes
@@ -71,14 +72,15 @@ public class Processor extends AgentLifeCycleAdapter {
                 try {
                     Document buildsDoc = Util.getRESTdocument(infoUrl, build.getAccessUser(), build.getAccessCode());
                     XPath xpath = XPathFactory.newInstance().newXPath();
-                    sourceBuildID = Long.parseLong((String)xpath.evaluate("/builds/build/@id", buildsDoc, XPathConstants.STRING));
+                    referenceBuildID = Long.parseLong((String)xpath.evaluate("/builds/build/@id", buildsDoc, XPathConstants.STRING));
+                    referenceBuildNumber = (String)xpath.evaluate("/builds/build/@number", buildsDoc, XPathConstants.STRING);
                 } catch (Exception e) {
                     log.error(e.toString());
                     log.error("This may mean that no suitable build is available to compare against");
                 }
                 
-                if(sourceBuildID != -1) {
-                    log.message(String.format("Source build ID is %s", sourceBuildID));
+                if(referenceBuildID != -1) {
+                    log.message(String.format("Reference build ID is %s", referenceBuildID));
 
                     File tempDir = new File(build.getBuildTempDirectory(), "image_comp_sources");
                     tempDir.mkdir();
@@ -99,7 +101,7 @@ public class Processor extends AgentLifeCycleAdapter {
                         log.message(String.format("Downloading %s to %s", path, target.getAbsolutePath()));
 
                         //note: this creates an artifact dependency, the server matches our credentials with the source build to create the link
-                        String downloadUrl = String.format("%s/httpAuth/app/rest/builds/%s/artifacts/content/%s", serverUrl, sourceBuildID, path);
+                        String downloadUrl = String.format("%s/httpAuth/app/rest/builds/%s/artifacts/content/%s", serverUrl, referenceBuildID, path);
                         try {
                             URLConnection connection = Util.webRequest(downloadUrl, build.getAccessUser(), build.getAccessCode());
                             Util.downloadFile(connection, target);
@@ -136,7 +138,7 @@ public class Processor extends AgentLifeCycleAdapter {
                     for (Entry<String, File> stored : storedItems.entrySet()) {
                         File cachedFile = new File(buildCachePath, stored.getKey());
                         if(cachedFile.exists()) {
-                            compare(build, params, stored.getKey(), stored.getValue(), cachedFile);
+                            compare(build, params, stored.getKey(), stored.getValue(), referenceBuildNumber, cachedFile);
                         } else {
                             log.error(String.format("Couldn't find file in cache: %s", cachedFile.getAbsolutePath()));
                         }
@@ -151,7 +153,7 @@ public class Processor extends AgentLifeCycleAdapter {
         log.activityFinished(blockMsg, "CUSTOM_IMAGE_COMP");
     }
 
-    boolean compare(AgentRunningBuild build, Map<String, String> params, String artifactName, File referenceImage, File newImage) {
+    boolean compare(AgentRunningBuild build, Map<String, String> params, String artifactName, File referenceImage, String referenceVersion, File newImage) {
         BuildProgressLogger log = build.getBuildLogger();
         
         ValueResolver resolvedParams = build.getSharedParametersResolver();
@@ -190,19 +192,20 @@ public class Processor extends AgentLifeCycleAdapter {
         }
 
         if("true".equals(params.get(Constants.FEATURE_SETTING_GENERATE_GIF))) {
-            //TODO: expand canvas and write 'before/after' at the top w/changelists
-            String artifactNameFlicker = String.format("%s_flicker.gif", FilenameUtils.removeExtension(artifactName));
-            File tempFlickerImage = new File(diffImagesTemp, artifactNameFlicker);
+            String artifactNameGif = String.format("%s_animated.gif", FilenameUtils.removeExtension(artifactName));
+            File tempGifImage = new File(diffImagesTemp, artifactNameGif);
 
-            if(imageMagickFlicker(magick, referenceImage, newImage, tempFlickerImage)) {
-                log.message(String.format("##teamcity[publishArtifacts '%s => %s']", tempFlickerImage.getAbsolutePath(), Constants.ARTIFACTS_RESULT_PATH));
+            File[] images = new File[] { referenceImage, newImage };
+            String[] annotations = new String[] { String.format("Baseline: #%s", build.getBuildNumber()), String.format("New: #%s", referenceVersion) };
+
+            if(imageMagickGif(magick, images, annotations, tempGifImage)) {
+                log.message(String.format("##teamcity[publishArtifacts '%s => %s']", tempGifImage.getAbsolutePath(), Constants.ARTIFACTS_RESULT_PATH));
             }
         }
 
-        //TODO: unlikely to work well with similarly named files in different places in artifacts
+        //TODO: unlikely to work well with similarly named files in different places in artifacts, support mirroring folder structure
         //TODO: meaningful return
         return true;
-        //TODO: TC statistic
         //TODO: beyond compare diff report option - can an agent requirement be optional based on whether it's enabled? won't work with the hidden prop hack
         //TODO: non-windows agent support
         //TODO: need to mark a build with the baseline it was compared against so there's no confusion if options change
@@ -211,21 +214,17 @@ public class Processor extends AgentLifeCycleAdapter {
     //TODO: put this in common module so server can run it for arbitrary builds
     DiffResult imageMagickDiff(File toolPath, String metric, File referenceImage, File newImage, File createDifferenceImage) {
         
-        DefaultExecutor executor = new DefaultExecutor();
-        
         CommandLine cmdLine = new CommandLine(toolPath.getAbsolutePath());
-        cmdLine.addArgument("compare");
-        cmdLine.addArgument("-metric");
+        cmdLine.addArguments("compare -quality 100 -metric");
         cmdLine.addArgument(metric);
-        cmdLine.addArgument("-compose");
-        cmdLine.addArgument("src");
+        cmdLine.addArguments("-compose src");
         cmdLine.addArgument(referenceImage.getAbsolutePath());
         cmdLine.addArgument(newImage.getAbsolutePath());
         cmdLine.addArgument(createDifferenceImage.getAbsolutePath());
 
         ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-        PumpStreamHandler streamHandler = new PumpStreamHandler(outStream);
-        executor.setStreamHandler(streamHandler);
+        DefaultExecutor executor = new DefaultExecutor();
+        executor.setStreamHandler(new PumpStreamHandler(outStream));
 
         //we don't actually care about the exit code unless it's 2, in which case something has genuinely gone wrong
         executor.setExitValues(new int[] { 0, 1 });
@@ -239,24 +238,39 @@ public class Processor extends AgentLifeCycleAdapter {
         }
     }
 
-    boolean imageMagickFlicker(File toolPath, File referenceImage, File newImage, File createFlickerImage) {
+    boolean imageMagickGif(File toolPath, File[] images, String[] annotations, File createImage) {
         
-        DefaultExecutor executor = new DefaultExecutor();
-
-        CommandLine cmdLine = new CommandLine(toolPath.getAbsolutePath());
-        cmdLine.addArgument("convert");
-        cmdLine.addArgument("-delay");
-        cmdLine.addArgument("100");
-        cmdLine.addArgument(referenceImage.getAbsolutePath());
-        cmdLine.addArgument(newImage.getAbsolutePath());
-        cmdLine.addArgument("-loop");
-        cmdLine.addArgument("0");
-        cmdLine.addArgument(createFlickerImage.getAbsolutePath());
-
         ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-        PumpStreamHandler streamHandler = new PumpStreamHandler(outStream);
-        executor.setStreamHandler(streamHandler);
+        DefaultExecutor executor = new DefaultExecutor();
+        executor.setStreamHandler(new PumpStreamHandler(outStream));
         executor.setWatchdog(new ExecuteWatchdog(20000));
+
+        //annotate each image
+        for (int i = 0; i < images.length; i++) {
+
+            CommandLine cmdLine = new CommandLine(toolPath.getAbsolutePath());
+            cmdLine.addArgument("mogrify"); //modify in-place
+            cmdLine.addArguments("-quality 100 -background #888f -gravity north -splice 0x43 -gravity northwest -pointsize 20 -draw");
+            cmdLine.addArgument(String.format("text 10,10 '%s'", annotations[i]));
+            cmdLine.addArgument(images[i].getAbsolutePath());
+
+            try {
+                executor.execute(cmdLine);
+            } catch (Exception e) {
+                return false; //TODO better feedback
+            }
+
+            outStream.reset();
+        }
+
+        //composite into a gif
+        CommandLine cmdLine = new CommandLine(toolPath.getAbsolutePath());
+        cmdLine.addArguments("convert -quality 100 -delay 100 -loop 0");
+        for (File image : images) {
+            cmdLine.addArgument(image.getAbsolutePath());
+        }
+        cmdLine.addArgument(createImage.getAbsolutePath());
+
         try {
             executor.execute(cmdLine);
             return true;
