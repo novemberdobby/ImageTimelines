@@ -196,6 +196,9 @@ public class Processor extends AgentLifeCycleAdapter {
                 }
                 //TODO: add note in readme, listing on build finished page only shows to 2 dp but graphs show full value. check /httpAuth/app/rest/builds/id:X/statistics
                 log.message(String.format("##teamcity[buildStatisticValue key='ic_%s_%s' value='%.6f']", FilenameUtils.removeExtension(artifactName), metric, diff.DifferenceAmount));
+
+                //TODO: print to log: source build, artifact name, then store in attributes on server side. that way we know what was compared against
+
             } else {
                 log.error(String.format("Result for %s: %s", metric.toUpperCase(), diff.StandardOut));
             }
