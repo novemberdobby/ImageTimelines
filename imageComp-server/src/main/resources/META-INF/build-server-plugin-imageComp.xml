@@ -5,4 +5,5 @@
        default-autowire="constructor">
        <bean class="novemberdobby.teamcity.imageComp.server.ImagesTab"/>
        <bean class="novemberdobby.teamcity.imageComp.server.ScanFeature"/>
+       <bean class="novemberdobby.teamcity.imageComp.server.RedirectToTypeTab"/>
 </beans>
