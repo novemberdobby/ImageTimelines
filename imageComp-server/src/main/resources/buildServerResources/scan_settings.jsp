@@ -146,4 +146,5 @@
   
   BS.ImageComparison.onComparisonTypeChange();
   BS.ImageComparison.loadDiffTypes();
+  BS.ImageComparison.saveDiffTypes();
 </script>
