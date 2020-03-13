@@ -1,28 +1,41 @@
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="forms" tagdir="/WEB-INF/tags/forms" %>
+<%@ page import="novemberdobby.teamcity.imageComp.common.Constants" %>
 
-<div style="padding-top: 0.5em; padding-bottom: 0.5em;">Note: graph extents (and colours) vary. <span style="color:#ff0000"><strong>Red</strong></span> bars show the highest values in the <strong>currently</strong> visible set.</div>
+<c:set var="num_builds" value="<%=Constants.GRAPH_NUM_BUILDS%>"/>
 <forms:saving id="getImgDataProgress"/>
 
 <div id="img_comp_options" style="display: none;">
-  <div style="padding: 0.25em; border: 1px solid #868686; width: min-content; margin: 0.25em; background: #e0e0e0; float: left;">
+  <div style="padding: 0.25em; border: 1px solid #868686; width: min-content; margin: 0.25em; background: #e0e0e0;">
   Artifact
   <br>
   <select id="img_comp_artifact" onchange="BS.ImageCompResults.changeArtifact()"></select>
   </div>
 
-  <div style="padding: 0.25em; border: 1px solid #868686; width: min-content; margin: 0.25em; background: #e0e0e0; float: left;">
+  <div style="padding: 0.25em; border: 1px solid #868686; width: min-content; margin: 0.25em; background: #e0e0e0;">
   Statistic
   <br>
   <select id="img_comp_stats"  onchange="BS.ImageCompResults.drawGraph()">
     <option value="-">-</option>
   </select>
   </div>
+  
+  <%--TODO show X builds <div style="padding: 0.25em; border: 1px solid #868686; width: min-content; margin: 0.25em; background: #e0e0e0; float: left;">
+  Statistic
+  <br>
+  <select id="img_comp_stats"  onchange="BS.ImageCompResults.drawGraph()">
+    <option value="-">-</option>
+  </select>
+  </div>--%>
 </div>
 
 <script src="${resources}/Chart.min.2_9_3.js"></script>
 
-<div id="statistics_container">
-  <canvas id="stats_chart" width="800" height="400"></canvas>
+<div id="statistics_container" style="display: none;">
+  <div id="statistics_images" style="height: 50em; background: lightgray; border: 1px solid black;">
+  </div>
+  <div style="padding-top: 0.5em; padding-bottom: 1em;">Note: graph extents vary. <span style="color:#ff0000"><strong>Red</strong></span> bars show the highest values in the <strong>currently</strong> visible set.</div>
+  <canvas id="stats_chart" height="70em"></canvas>
 </div>
 
 <script type="text/javascript">
@@ -33,7 +46,7 @@
 
     getData: function() {
       BS.Util.show('getImgDataProgress');
-      $j.getJSON(base_uri + '/app/rest/builds?locator=buildType(internalId:${buildTypeIntID}),count:100&fields=build(id,number,status,buildType(id,name,projectName),statistics(property(name,value)))',
+      $j.getJSON(base_uri + '/app/rest/builds?locator=buildType(internalId:${buildTypeIntID}),count:${num_builds}&fields=build(id,number,status,buildType(id,name,projectName),statistics(property(name,value)))',
         function(data) {
             BS.ImageCompResults.parseData(data);
         }
@@ -41,12 +54,12 @@
     },
 
     parseData: function(buildData) {
-      Artifacts = {};
+      Artifacts = {}; //TODO show how many builds are being displayed
       for (var i = buildData.build.length - 1; i >= 0; i--) {
         const build = buildData.build[i];
         build.statistics.property.forEach(p => {
           //only get image comp stats
-          var match = p.name.match("ic_(\\w+)_(\\w+)"); //ic_<artifactname>_<metricname>
+          var match = p.name.match("ic_([\\w\\.]+)_([\\w\\.]+)"); //ic_<artifactname>_<metricname>
           if(match != undefined) {
             var name = match[1];
             if(Artifacts[name] == undefined) {
@@ -71,7 +84,8 @@
       }
 
       BS.Util.hide('getImgDataProgress');
-      BS.Util.show('img_comp_options');
+      BS.Util.show('statistics_container');
+      $('img_comp_options').style.display = "flex";
       BS.ImageCompResults.changeArtifact();
     },
 
@@ -93,12 +107,8 @@
     },
 
     drawGraph: function() {
-      var ddArtifacts = $('img_comp_artifact');
-      var ddStats = $('img_comp_stats');
-      BS.ImageCompResults.displayData(ddArtifacts.value, ddStats.value);
-    },
-
-    displayData: function(targetArtifact, targetStat) {
+      var targetArtifact = $('img_comp_artifact').value;
+      var targetStat = $('img_comp_stats').value;
       
       //TODO: support showing multiple sets e.g. psnr + dssim etc. will need to reintroduce category spacing & make colours show metric
       //set up chart
@@ -106,34 +116,30 @@
       if(BS.ImageCompResults.Chart == undefined) {
         BS.ImageCompResults.Chart = new Chart(context, {
           type: 'bar',
-          data: {
-              barPercentage: 1,
-              categoryPercentage: 1
-          },
           options: {
-              legend: { display: false },
-              hover: { animationDuration: 0 },
-              animation: { duration: 0 },
-              scales: {
-                  yAxes: [{
-                      ticks: { beginAtZero: true }
-                  }],
-                  xAxes: [
-                    {
-                      gridLines: { display: false },
-                      ticks: {
-                        callback: function(value, index, values) {
-                          return index % 5 == 0 ? value : '';
-                        }
-                      }
+            legend: { display: false },
+            hover: { animationDuration: 0 },
+            animation: { duration: 0 },
+            scales: {
+              yAxes: [{
+                  ticks: { beginAtZero: true }
+              }],
+              xAxes: [
+                {
+                  gridLines: { display: false },
+                  ticks: {
+                    callback: function(value, index, values) {
+                      return index % 5 == 0 ? value : '';
                     }
-                  ]
-              },
-              onClick: function(event, items) {
-                if(items.length == 1) {
-                  alert("Item " + items[0]._index + " clicked");
+                  }
                 }
+              ]
+            },
+            onClick: function(event, items) {
+              if(items.length == 1) {
+                alert("Item " + items[0]._index + " clicked");
               }
+            }
           }
         });
       }
@@ -151,6 +157,7 @@
       var invLerp = function(a, b, c) { return (c - a) / (b - a); }
       var colourLerp = function(a, b, c) { return "rgba(" + lerp(a[0], b[0], c) + "," + lerp(a[1], b[1], c) + "," + lerp(a[2], b[2], c) + "," + lerp(a[3], b[3], c) + ")" }
 
+      //TODO can we show dates in the tooltips?
       BS.ImageCompResults.Chart.data.labels = target.map(d => d.build);
       BS.ImageCompResults.Chart.data.datasets = [{
           label: targetStat,
@@ -166,10 +173,8 @@
           },
           hoverBackgroundColor: "rgb(128, 128, 128, 255)",
           categoryPercentage: 1,
-          barPercentage: 1.05, //overlap a little so there's no gap
-          
-          borderWidth: 1, //TODO: keep?
-          borderColor: "rgb(0, 0, 0, 255)",
+          barPercentage: 1.05, //overlap a little so there's no gap. looks a bit silly when there are <10 data points but it's not terrible
+          minBarLength: 2,
       }];
       
       BS.ImageCompResults.Chart.update();
