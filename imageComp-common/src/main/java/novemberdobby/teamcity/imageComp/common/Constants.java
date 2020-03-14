@@ -24,6 +24,4 @@ public class Constants {
     public static final String ARTIFACTS_RESULT_PATH = "image_comparisons";
 
 	public static final String ARTIFACT_LOOKUP_URL = "/image_comp_query_artifacts.html";
-
-    public static final Integer GRAPH_NUM_BUILDS = 200;
 }

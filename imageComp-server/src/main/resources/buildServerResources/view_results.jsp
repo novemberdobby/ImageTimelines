@@ -2,39 +2,44 @@
 <%@ taglib prefix="forms" tagdir="/WEB-INF/tags/forms" %>
 <%@ page import="novemberdobby.teamcity.imageComp.common.Constants" %>
 
-<c:set var="num_builds" value="<%=Constants.GRAPH_NUM_BUILDS%>"/>
 <forms:saving id="getImgDataProgress"/>
 
-<div id="img_comp_options" style="display: none;">
-  <div style="padding: 0.25em; border: 1px solid #868686; width: min-content; margin: 0.25em; background: #e0e0e0;">
-  Artifact
-  <br>
-  <select id="img_comp_artifact" onchange="BS.ImageCompResults.changeArtifact()"></select>
+<%-- TODO: permalink button that goes straight to a provided artifact/stat/count --%>
+<div id="img_comp_options" style="display: none; border: 1px solid #868686; border-style: double; margin-bottom: 1em; margin-right: 0.5em; background: #e4e4e4; width: min-content;">
+  <div style="padding: 0.25em; width: min-content; margin: 0.25em;">
+    Builds
+    <forms:saving id="getImgDataProgressBuilds" style="float: right;"/>
+    <br>
+    <select id="img_comp_opt_count"  onchange="BS.ImageCompResults.getData()">
+      <option value="100" selected="true">100</option>
+      <option value="200">200</option>
+      <option value="500">500</option>
+      <option value="1000">1000</option>
+    </select>
   </div>
 
-  <div style="padding: 0.25em; border: 1px solid #868686; width: min-content; margin: 0.25em; background: #e0e0e0;">
-  Statistic
-  <br>
-  <select id="img_comp_stats"  onchange="BS.ImageCompResults.drawGraph()">
-    <option value="-">-</option>
-  </select>
+  <div style="padding: 0.25em; width: min-content; margin: 0.25em;">
+    Artifact
+    <br>
+    <select id="img_comp_opt_artifact" onchange="BS.ImageCompResults.changeArtifact()"></select>
   </div>
-  
-  <%--TODO show X builds <div style="padding: 0.25em; border: 1px solid #868686; width: min-content; margin: 0.25em; background: #e0e0e0; float: left;">
-  Statistic
-  <br>
-  <select id="img_comp_stats"  onchange="BS.ImageCompResults.drawGraph()">
-    <option value="-">-</option>
-  </select>
-  </div>--%>
+
+  <div style="padding: 0.25em; width: min-content; margin: 0.25em;">
+    Statistic
+    <br>
+    <select id="img_comp_opt_stats" onchange="BS.ImageCompResults.drawGraph()">
+      <option value="-">-</option>
+    </select>
+  </div>
 </div>
 
-<script src="${resources}/Chart.min.2_9_3.js"></script>
+<script src="${resources}Chart.min.2_9_3.js"></script>
 
 <div id="statistics_container" style="display: none;">
   <div id="statistics_images" style="height: 50em; background: lightgray; border: 1px solid black;">
   </div>
-  <div style="padding-top: 0.5em; padding-bottom: 1em;">Note: graph extents vary. <span style="color:#ff0000"><strong>Red</strong></span> bars show the highest values in the <strong>currently</strong> visible set.</div>
+  <div style="padding-top: 0.5em;">Note: graph extents vary. <span style="color:#ff0000"><strong>Red</strong></span> bars show the highest values in the <strong>currently</strong> visible set.</div>
+  <div id="img_comp_stats_count" style="padding-bottom: 1em;"></div>
   <canvas id="stats_chart" height="70em"></canvas>
 </div>
 
@@ -43,10 +48,16 @@
   BS.ImageCompResults = {
 
     Artifacts: {},
+    CurrentTarget: [],
 
     getData: function() {
-      BS.Util.show('getImgDataProgress');
-      $j.getJSON(base_uri + '/app/rest/builds?locator=buildType(internalId:${buildTypeIntID}),count:${num_builds}&fields=build(id,number,status,buildType(id,name,projectName),statistics(property(name,value)))',
+      if($('img_comp_options').style.display == "none") {
+        BS.Util.show('getImgDataProgress');
+      } else {
+        BS.Util.show('getImgDataProgressBuilds');
+      }
+
+      $j.getJSON(base_uri + '/app/rest/builds?locator=buildType(internalId:${buildTypeIntID}),count:' + $('img_comp_opt_count').value + '&fields=build(startDate,id,number,status,buildType(id,name,projectName),statistics(property(name,value)))',
         function(data) {
             BS.ImageCompResults.parseData(data);
         }
@@ -54,7 +65,7 @@
     },
 
     parseData: function(buildData) {
-      Artifacts = {}; //TODO show how many builds are being displayed
+      Artifacts = {};
       for (var i = buildData.build.length - 1; i >= 0; i--) {
         const build = buildData.build[i];
         build.statistics.property.forEach(p => {
@@ -71,19 +82,26 @@
               Artifacts[name][stat] = [];
             }
 
-            Artifacts[name][stat].push({ build: build.number, value: p.value });
+            Artifacts[name][stat].push({ build: build.number, value: p.value, date: Date(build.startDate) });
           }
         });
       }
 
       //fill artifact dropdown
-      var ddArtifacts = $('img_comp_artifact');
+      var ddArtifacts = $('img_comp_opt_artifact');
+      var oldArtifact = ddArtifacts.value;
       ddArtifacts.innerHTML = "";
       for(var art in Artifacts) {
         ddArtifacts.options.add(new Option(art, art))
       }
+      var newArtifact = ddArtifacts.value;
+      ddArtifacts.value = oldArtifact;
+      if(ddArtifacts.value == "") {
+        ddArtifacts.value = newArtifact;
+      }
 
       BS.Util.hide('getImgDataProgress');
+      BS.Util.hide('getImgDataProgressBuilds');
       BS.Util.show('statistics_container');
       $('img_comp_options').style.display = "flex";
       BS.ImageCompResults.changeArtifact();
@@ -91,8 +109,9 @@
 
     changeArtifact: function() {
       //fill stats dropdown based on selected artifact
-      var ddArtifacts = $('img_comp_artifact');
-      var ddStats = $('img_comp_stats');
+      var ddArtifacts = $('img_comp_opt_artifact');
+      var ddStats = $('img_comp_opt_stats');
+      var oldStat = ddStats.value;
       ddStats.innerHTML = "";
 
       const targetArtifact = Artifacts[ddArtifacts.value];
@@ -101,14 +120,20 @@
           ddStats.options.add(new Option(stat, stat))
         }
       }
+      
+      var newStat = ddStats.value;
+      ddStats.value = oldStat;
+      if(ddStats.value == "") {
+        ddStats.value = newStat;
+      }
 
       //show initial graph
       BS.ImageCompResults.drawGraph();
     },
 
     drawGraph: function() {
-      var targetArtifact = $('img_comp_artifact').value;
-      var targetStat = $('img_comp_stats').value;
+      var targetArtifact = $('img_comp_opt_artifact').value;
+      var targetStat = $('img_comp_opt_stats').value;
       
       //TODO: support showing multiple sets e.g. psnr + dssim etc. will need to reintroduce category spacing & make colours show metric
       //set up chart
@@ -135,6 +160,15 @@
                 }
               ]
             },
+            tooltips: {
+              displayColors: false,
+              callbacks: {
+                label: function(tooltipItem, data) {
+                  //TODO show metric in multimetric mode, data.datasets[tooltipItem.datasetIndex].label
+                  return ["Started " + CurrentTarget[tooltipItem.index].date];
+                }
+              }
+            },
             onClick: function(event, items) {
               if(items.length == 1) {
                 alert("Item " + items[0]._index + " clicked");
@@ -149,6 +183,7 @@
 
       //collect data
       const target = Artifacts[targetArtifact][targetStat];
+      CurrentTarget = target;
       const values = target.map(d => d.value);
       var targetMin = 0; //TODO: is this OK to assume for all metrics?
       var targetMax = values.reduce((a, b) => Math.max(a, b));
@@ -157,7 +192,6 @@
       var invLerp = function(a, b, c) { return (c - a) / (b - a); }
       var colourLerp = function(a, b, c) { return "rgba(" + lerp(a[0], b[0], c) + "," + lerp(a[1], b[1], c) + "," + lerp(a[2], b[2], c) + "," + lerp(a[3], b[3], c) + ")" }
 
-      //TODO can we show dates in the tooltips?
       BS.ImageCompResults.Chart.data.labels = target.map(d => d.build);
       BS.ImageCompResults.Chart.data.datasets = [{
           label: targetStat,
@@ -178,6 +212,7 @@
       }];
       
       BS.ImageCompResults.Chart.update();
+      $('img_comp_stats_count').textContent = "Showing " + values.length + " values";
     }
   };
 
