@@ -34,6 +34,7 @@
 </div>
 
 <script src="${resources}Chart.min.2_9_3.js"></script>
+<script src="${resources}moment.min.2_24_0.js"></script>
 
 <div id="statistics_container" style="display: none;">
   <div id="statistics_images" style="height: 50em; background: lightgray; border: 1px solid black;">
@@ -82,7 +83,7 @@
               Artifacts[name][stat] = [];
             }
 
-            Artifacts[name][stat].push({ build: build.number, value: p.value, date: Date(build.startDate) });
+            Artifacts[name][stat].push({ build: build.number, value: p.value, date: new moment(build.startDate) });
           }
         });
       }
@@ -165,7 +166,7 @@
               callbacks: {
                 label: function(tooltipItem, data) {
                   //TODO show metric in multimetric mode, data.datasets[tooltipItem.datasetIndex].label
-                  return ["Started " + CurrentTarget[tooltipItem.index].date];
+                  return ["Started " + CurrentTarget[tooltipItem.index].date.format("llll")];
                 }
               }
             },
