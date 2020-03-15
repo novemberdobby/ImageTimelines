@@ -4,6 +4,11 @@
 
 <c:set var="artifact_lookup_url" value="<%=Constants.ARTIFACT_LOOKUP_URL%>"/>
 
+<script src="${resources}js/Chart.min.2_9_3.js"></script>
+<script src="${resources}js/moment.min.2_24_0.js"></script>
+<script src="${resources}js/imgslider.min.js"></script>
+<link rel="stylesheet" type="text/css" href="${resources}css/imgslider.min.css">
+
 <forms:saving id="getImgDataProgress"/>
 
 <%-- TODO: permalink button that goes straight to a provided artifact/stat/count --%>
@@ -44,25 +49,47 @@
   </div>
 </div>
 
-<script src="${resources}Chart.min.2_9_3.js"></script>
-<script src="${resources}moment.min.2_24_0.js"></script>
-
+<%-- TODO: _diff image mode (check it exists) --%>
 <%-- TODO: L/R buttons outside the bounds --%>
 <div id="statistics_container" style="display: none;">
-  <div id="statistics_images" style="height: 50em;border: 2px solid black;display: none;height: min-content;">
-    <div style="width: 50%;border-right: 1px solid black;">
+
+  <div id="statistics_images_sxs" style="border: 2px solid black; display: none; height: min-content;">
+    <div style="width: 50%; border-right: 1px solid black;">
       <div style="overflow: hidden; padding: 4px; font-weight: bold; border-bottom: 2px solid black; text-align: center;">
-        <a id="img_comp_left_label" target="_blank"></a>
+        <a id="img_comp_left_label_sxs" target="_blank"></a>
       </div>
-      <img id="img_comp_left" style="width: 100%;">
+      <img id="img_comp_left_sxs" style="width: 100%; display: block;">
     </div>
-    <div style="width: 50%;border-left: 1px solid black;">
+    <div style="width: 50%; border-left: 1px solid black;">
       <div style="overflow: hidden; padding: 4px; font-weight: bold; border-bottom: 2px solid black; text-align: center;">
-        <a id="img_comp_right_label" target="_blank"></a>
+        <a id="img_comp_right_label_sxs" target="_blank"></a>
       </div>
-      <img id="img_comp_right" style="width: 100%;">
+      <img id="img_comp_right_sxs" style="width: 100%; display: block;">
     </div>
   </div>
+
+  <div id="statistics_images_diff" style="border: 2px solid black; display: none; height: min-content;">
+    <div style="display: flex; border-bottom: 2px solid black;">
+      <div style="overflow: hidden; padding: 4px; font-weight: bold;">
+        <a id="img_comp_right_label_diff" target="_blank"></a>
+      </div>
+      <div style="overflow: hidden; padding: 4px; font-weight: bold; margin-left: auto;">
+        <a id="img_comp_left_label_diff" target="_blank"></a>
+      </div>
+    </div>
+
+    <div class="slider">
+      <div class="slider responsive">
+        <div class="left image">
+          <img id="img_comp_left_diff" style="display:block;"/>
+        </div>
+        <div class="right image">
+          <img id="img_comp_right_diff" style="display:block;"/>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="img_comp_hint">
     Click a bar on the graph below to display comparison.
   </div>
@@ -166,7 +193,8 @@
     },
 
     drawGraph: function() {
-      BS.Util.hide('statistics_images');
+      BS.Util.hide('statistics_images_sxs');
+      BS.Util.hide('statistics_images_diff');
       BS.Util.show('img_comp_hint');
       var targetArtifact = $('img_comp_opt_artifact').value;
       var targetStat = $('img_comp_opt_stats').value;
@@ -261,6 +289,7 @@
       var thisBuild = BS.ImageCompResults.CurrentChartData[BS.ImageCompResults.SelectedIndex];
       var artifact = $('img_comp_opt_artifact').value;
       
+      //TODO: support dedicated page for more real estate
       //TODO: test with various sized images & mismatched
       //get the build to compare against
       BS.ajaxRequest(window['base_uri'] + '${artifact_lookup_url}', {
@@ -277,16 +306,24 @@
               var baselineId = transport.responseText.substring(0, comma);
               var baselineNumber = transport.responseText.substring(comma + 1);
 
-              $('statistics_images').style.display = "flex";
-              BS.Util.hide('img_comp_hint');
-              
-              $('img_comp_left').src = "/repository/download/${buildTypeExtID}/" + baselineId + ":id/" + artifact;
-              $('img_comp_left_label').href = "/viewLog.html?buildId=" + baselineId;
-              $('img_comp_left_label').innerText = "#" + baselineNumber;
+              var compType = $('img_comp_opt_view_mode').value;
 
-              $('img_comp_right').src = "/repository/download/${buildTypeExtID}/" + thisBuild.id + ":id/" + artifact;
-              $('img_comp_right_label').href = "/viewLog.html?buildId=" + thisBuild.id;
-              $('img_comp_right_label').innerText = "#" + thisBuild.number;
+              BS.Util.hide('img_comp_hint');
+              $('statistics_images_sxs').style.display = "none";
+              $('statistics_images_diff').style.display = "none";
+              $('statistics_images_' + compType).style.display = compType == "diff" ? "" : "flex";
+              
+              $('img_comp_left_' + compType).src = "/repository/download/${buildTypeExtID}/" + baselineId + ":id/" + artifact;
+              $('img_comp_left_label_' + compType).href = "/viewLog.html?buildId=" + baselineId;
+              $('img_comp_left_label_' + compType).innerText = "#" + baselineNumber;
+
+              $('img_comp_right_' + compType).src = "/repository/download/${buildTypeExtID}/" + thisBuild.id + ":id/" + artifact;
+              $('img_comp_right_label_' + compType).href = "/viewLog.html?buildId=" + thisBuild.id;
+              $('img_comp_right_label_' + compType).innerText = "#" + thisBuild.number;
+
+              if(compType == "diff") {
+                $j('.slider').slider();
+              }
             }
             else
             {
