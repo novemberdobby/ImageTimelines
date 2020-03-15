@@ -187,6 +187,7 @@ public class Processor extends AgentLifeCycleAdapter {
             String artifactNameDiff = String.format("%s_diff.%s", FilenameUtils.removeExtension(artifactName), FilenameUtils.getExtension(artifactName));
             File tempDiffImage = new File(diffImagesTemp, artPrefix + artifactNameDiff);
 
+            //TODO: support tolerance aka -fuzz
             DiffResult diff = imageMagickDiff(magick, metric, referenceImage, newImage, tempDiffImage);
 
             if(diff.Success) {
@@ -221,9 +222,7 @@ public class Processor extends AgentLifeCycleAdapter {
         //TODO: unlikely to work well with similarly named files in different places in artifacts, support mirroring folder structure
         //TODO: meaningful return
         return true;
-        //TODO: beyond compare diff report option - can an agent requirement be optional based on whether it's enabled? won't work with the hidden prop hack
         //TODO: non-windows agent support
-        //TODO: need to mark a build with the baseline it was compared against so there's no confusion if options change
     }
 
     //TODO: put this in common module so server can run it for arbitrary builds

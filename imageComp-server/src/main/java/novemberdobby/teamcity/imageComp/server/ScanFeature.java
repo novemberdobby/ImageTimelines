@@ -86,8 +86,6 @@ public class ScanFeature extends BuildFeature {
     @Override
     public Collection<Requirement> getRequirements(Map<String, String> params) {
         //TODO: instructions for IM tool install in readme https://imagemagick.org/download/binaries/ImageMagick-7.0.9-27-portable-Q16-x64.zip
-        //TODO: instructions for BC tool install in readme
-        //always require ImageMagick, but decide whether or not to use Beyond Compare at runtime (if it's installed)
         List<Requirement> reqs = new ArrayList<>();
         reqs.add(new Requirement("image_conversion_tool", Constants.TOOL_IM_PATH_PARAM, null, RequirementType.EXISTS));
 
