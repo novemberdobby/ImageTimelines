@@ -2,10 +2,12 @@
 <%@ taglib prefix="forms" tagdir="/WEB-INF/tags/forms" %>
 <%@ page import="novemberdobby.teamcity.imageComp.common.Constants" %>
 
+<c:set var="artifact_lookup_url" value="<%=Constants.ARTIFACT_LOOKUP_URL%>"/>
+
 <forms:saving id="getImgDataProgress"/>
 
 <%-- TODO: permalink button that goes straight to a provided artifact/stat/count --%>
-<div id="img_comp_options" style="display: none; border: 1px solid #868686; border-style: double; margin-bottom: 1em; margin-right: 0.5em; background: #e4e4e4; width: min-content;">
+<div id="img_comp_options" style="display: none; border: 1px solid #868686; border-style: double; margin-bottom: 1em; margin-right: 0.5em; background: #e4e4e4;">
   <div style="padding: 0.25em; width: min-content; margin: 0.25em;">
     Builds
     <forms:saving id="getImgDataProgressBuilds" style="float: right;"/>
@@ -31,17 +33,42 @@
       <option value="-">-</option>
     </select>
   </div>
+  
+  <div style="padding: 0.25em; width: min-content; margin: 0.25em; margin-left: auto; text-align: right;">
+    View mode
+    <br>
+    <select id="img_comp_opt_view_mode" onchange="BS.ImageCompResults.updateView()">
+      <option value="sxs">Side by side</option>
+      <option value="diff">Diff slider</option> <%-- TODO --%>
+    </select>
+  </div>
 </div>
 
 <script src="${resources}Chart.min.2_9_3.js"></script>
 <script src="${resources}moment.min.2_24_0.js"></script>
 
+<%-- TODO: L/R buttons outside the bounds --%>
 <div id="statistics_container" style="display: none;">
-  <div id="statistics_images" style="height: 50em; background: lightgray; border: 1px solid black;">
+  <div id="statistics_images" style="height: 50em;border: 2px solid black;display: none;height: min-content;">
+    <div style="width: 50%;border-right: 1px solid black;">
+      <div style="overflow: hidden; padding: 4px; font-weight: bold; border-bottom: 2px solid black; text-align: center;">
+        <a id="img_comp_left_label" target="_blank"></a>
+      </div>
+      <img id="img_comp_left" style="width: 100%;">
+    </div>
+    <div style="width: 50%;border-left: 1px solid black;">
+      <div style="overflow: hidden; padding: 4px; font-weight: bold; border-bottom: 2px solid black; text-align: center;">
+        <a id="img_comp_right_label" target="_blank"></a>
+      </div>
+      <img id="img_comp_right" style="width: 100%;">
+    </div>
   </div>
-  <div style="padding-top: 0.5em;">Note: graph extents vary. <span style="color:#ff0000"><strong>Red</strong></span> bars show the highest values in the <strong>currently</strong> visible set.</div>
-  <div id="img_comp_stats_count" style="padding-bottom: 1em;"></div>
+  <div id="img_comp_hint">
+    Click a bar on the graph below to display comparison.
+  </div>
+
   <canvas id="stats_chart" height="70em"></canvas>
+  <div style="padding-top: 0.5em;">Note: graph extents vary. <span style="color:#ff0000"><strong>Red</strong></span> bars show the highest values in the <strong>currently</strong> visible set.</div>
 </div>
 
 <script type="text/javascript">
@@ -49,7 +76,8 @@
   BS.ImageCompResults = {
 
     Artifacts: {},
-    CurrentTarget: [],
+    CurrentChartData: [],
+    SelectedIndex: -1,
 
     getData: function() {
       if($('img_comp_options').style.display == "none") {
@@ -83,7 +111,12 @@
               Artifacts[name][stat] = [];
             }
 
-            Artifacts[name][stat].push({ build: build.number, value: p.value, date: new moment(build.startDate) });
+            Artifacts[name][stat].push({
+              number: build.number,
+              value: p.value,
+              date: new moment(build.startDate),
+              id: build.id
+            });
           }
         });
       }
@@ -133,6 +166,8 @@
     },
 
     drawGraph: function() {
+      BS.Util.hide('statistics_images');
+      BS.Util.show('img_comp_hint');
       var targetArtifact = $('img_comp_opt_artifact').value;
       var targetStat = $('img_comp_opt_stats').value;
       
@@ -143,6 +178,7 @@
         BS.ImageCompResults.Chart = new Chart(context, {
           type: 'bar',
           options: {
+            title: { display: true },
             legend: { display: false },
             hover: { animationDuration: 0 },
             animation: { duration: 0 },
@@ -166,13 +202,14 @@
               callbacks: {
                 label: function(tooltipItem, data) {
                   //TODO show metric in multimetric mode, data.datasets[tooltipItem.datasetIndex].label
-                  return ["Started " + CurrentTarget[tooltipItem.index].date.format("llll")];
+                  return ["Started " + BS.ImageCompResults.CurrentChartData[tooltipItem.index].date.format("llll")];
                 }
               }
             },
             onClick: function(event, items) {
               if(items.length == 1) {
-                alert("Item " + items[0]._index + " clicked");
+                BS.ImageCompResults.SelectedIndex = items[0]._index;
+                BS.ImageCompResults.updateView();
               }
             }
           }
@@ -184,7 +221,7 @@
 
       //collect data
       const target = Artifacts[targetArtifact][targetStat];
-      CurrentTarget = target;
+      BS.ImageCompResults.CurrentChartData = target;
       const values = target.map(d => d.value);
       var targetMin = 0; //TODO: is this OK to assume for all metrics?
       var targetMax = values.reduce((a, b) => Math.max(a, b));
@@ -193,7 +230,7 @@
       var invLerp = function(a, b, c) { return (c - a) / (b - a); }
       var colourLerp = function(a, b, c) { return "rgba(" + lerp(a[0], b[0], c) + "," + lerp(a[1], b[1], c) + "," + lerp(a[2], b[2], c) + "," + lerp(a[3], b[3], c) + ")" }
 
-      BS.ImageCompResults.Chart.data.labels = target.map(d => d.build);
+      BS.ImageCompResults.Chart.data.labels = target.map(d => d.number);
       BS.ImageCompResults.Chart.data.datasets = [{
           label: targetStat,
           data: values,
@@ -206,14 +243,57 @@
               return colourLerp([255,128,0,255], [255,0,0,255], (normalised - 0.5) * 2); //orange-red
             }
           },
-          hoverBackgroundColor: "rgb(128, 128, 128, 255)",
+          hoverBackgroundColor: "rgba(128, 128, 128, 255)",
           categoryPercentage: 1,
-          barPercentage: 1.05, //overlap a little so there's no gap. looks a bit silly when there are <10 data points but it's not terrible
-          minBarLength: 2,
+          barPercentage: 1.01, //overlap a little so there's no gap. looks a bit silly when there are <10 data points but it's not terrible
+          minBarLength: 5,
       }];
       
+      BS.ImageCompResults.Chart.options.title.text = "Showing " + values.length + " values";
       BS.ImageCompResults.Chart.update();
-      $('img_comp_stats_count').textContent = "Showing " + values.length + " values";
+    },
+
+    updateView: function() {
+      if(BS.ImageCompResults.SelectedIndex == -1 || BS.ImageCompResults.CurrentChartData == undefined) {
+        return;
+      }
+      
+      var thisBuild = BS.ImageCompResults.CurrentChartData[BS.ImageCompResults.SelectedIndex];
+      var artifact = $('img_comp_opt_artifact').value;
+      
+      //TODO: test with various sized images & mismatched
+      //get the build to compare against
+      BS.ajaxRequest(window['base_uri'] + '${artifact_lookup_url}', {
+        method: "GET",
+        parameters: {
+          'buildId': thisBuild.id,
+          'artifact': artifact,
+        },
+        onComplete: function(transport) {
+            if(transport.status == 200)
+            {
+              //fill everything out
+              var comma = transport.responseText.indexOf(',');
+              var baselineId = transport.responseText.substring(0, comma);
+              var baselineNumber = transport.responseText.substring(comma + 1);
+
+              $('statistics_images').style.display = "flex";
+              BS.Util.hide('img_comp_hint');
+              
+              $('img_comp_left').src = "/repository/download/${buildTypeExtID}/" + baselineId + ":id/" + artifact;
+              $('img_comp_left_label').href = "/viewLog.html?buildId=" + baselineId;
+              $('img_comp_left_label').innerText = "#" + baselineNumber;
+
+              $('img_comp_right').src = "/repository/download/${buildTypeExtID}/" + thisBuild.id + ":id/" + artifact;
+              $('img_comp_right_label').href = "/viewLog.html?buildId=" + thisBuild.id;
+              $('img_comp_right_label').innerText = "#" + thisBuild.number;
+            }
+            else
+            {
+                alert("Failed to look up baseline image (code " + transport.status + ")");
+            }
+        }
+      });
     }
   };
 

@@ -28,6 +28,7 @@ public class ImagesTab extends BuildTypeTab {
     protected void fillModel(Map<String, Object> model, HttpServletRequest request, SBuildType buildType, SUser user) {
         model.put("resources", m_resourcePath);
         model.put("buildTypeIntID", buildType.getBuildTypeId());
+        model.put("buildTypeExtID", buildType.getExternalId());
     }
 
     @Override

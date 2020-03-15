@@ -1,5 +1,6 @@
 package novemberdobby.teamcity.imageComp.server;
 
+import java.io.PrintWriter;
 import java.util.List;
 import java.util.Map.Entry;
 
@@ -61,7 +62,10 @@ public class DownloadedArtifactsRequest extends BaseController {
         for (Entry<Build, List<ArtifactInfo>> sourceBuild : build.getDownloadedArtifacts().getArtifacts().entrySet()) {
             for (ArtifactInfo art : sourceBuild.getValue()) {
                 if(artifact.equals(art.getArtifactPath())) {
-                    response.getWriter().write(Long.toString(sourceBuild.getKey().getBuildId()));
+                    PrintWriter writer = response.getWriter();
+                    writer.write(Long.toString(sourceBuild.getKey().getBuildId()));
+                    writer.write(",");
+                    writer.write(sourceBuild.getKey().getBuildNumber());
                     return null;
                 }
             }
