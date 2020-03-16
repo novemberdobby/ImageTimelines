@@ -71,10 +71,10 @@
   <div id="statistics_images_diff" style="border: 2px solid black; display: none; height: min-content;">
     <div style="display: flex; border-bottom: 2px solid black;">
       <div style="overflow: hidden; padding: 4px; font-weight: bold;">
-        <a id="img_comp_right_label_diff" target="_blank"></a>
+        <a id="img_comp_left_label_diff" target="_blank"></a>
       </div>
       <div style="overflow: hidden; padding: 4px; font-weight: bold; margin-left: auto;">
-        <a id="img_comp_left_label_diff" target="_blank"></a>
+        <a id="img_comp_right_label_diff" target="_blank"></a>
       </div>
     </div>
 
@@ -315,11 +315,11 @@
               
               $('img_comp_left_' + compType).src = "/repository/download/${buildTypeExtID}/" + baselineId + ":id/" + artifact;
               $('img_comp_left_label_' + compType).href = "/viewLog.html?buildId=" + baselineId;
-              $('img_comp_left_label_' + compType).innerText = "#" + baselineNumber;
+              $('img_comp_left_label_' + compType).innerText = "Baseline: #" + baselineNumber;
 
               $('img_comp_right_' + compType).src = "/repository/download/${buildTypeExtID}/" + thisBuild.id + ":id/" + artifact;
               $('img_comp_right_label_' + compType).href = "/viewLog.html?buildId=" + thisBuild.id;
-              $('img_comp_right_label_' + compType).innerText = "#" + thisBuild.number;
+              $('img_comp_right_label_' + compType).innerText = "This build: #" + thisBuild.number;
 
               if(compType == "diff") {
                 $j('.slider').slider();
