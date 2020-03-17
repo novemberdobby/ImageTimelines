@@ -50,18 +50,17 @@
 </div>
 
 <%-- TODO: _diff image mode (check it exists) --%>
-<%-- TODO: L/R buttons outside the bounds --%>
 <div id="statistics_container" style="display: none;">
 
   <div id="statistics_images_sxs" style="border: 2px solid black; display: none; height: min-content;">
     <div style="width: 50%; border-right: 1px solid black;">
-      <div style="overflow: hidden; padding: 4px; font-weight: bold; border-bottom: 2px solid black; text-align: center;">
+      <div style="overflow: hidden; padding: 4px; font-weight: bold; border-bottom: 2px solid black; text-align: left;">
         <a id="img_comp_left_label_sxs" target="_blank"></a>
       </div>
       <img id="img_comp_left_sxs" style="width: 100%; display: block;">
     </div>
     <div style="width: 50%; border-left: 1px solid black;">
-      <div style="overflow: hidden; padding: 4px; font-weight: bold; border-bottom: 2px solid black; text-align: center;">
+      <div style="overflow: hidden; padding: 4px; font-weight: bold; border-bottom: 2px solid black; text-align: right;">
         <a id="img_comp_right_label_sxs" target="_blank"></a>
       </div>
       <img id="img_comp_right_sxs" style="width: 100%; display: block;">
@@ -321,7 +320,8 @@
               $('img_comp_right_label_' + compType).href = "/viewLog.html?buildId=" + thisBuild.id;
               $('img_comp_right_label_' + compType).innerText = "This build: #" + thisBuild.number;
 
-              if(compType == "diff") {
+              if(compType == "diff" && BS.ImageCompResults.SliderInit == undefined) {
+                BS.ImageCompResults.SliderInit = true;
                 $j('.slider').slider();
               }
             }
@@ -331,9 +331,24 @@
             }
         }
       });
+    },
+
+    keyDown(e) {
+      if(e.target != document.body || BS.ImageCompResults.CurrentChartData == undefined) {
+        return;
+      }
+
+      if(e.code == "ArrowLeft" && BS.ImageCompResults.SelectedIndex > 0) {
+        BS.ImageCompResults.SelectedIndex--;
+        BS.ImageCompResults.updateView();
+      } else if(e.code == "ArrowRight" && BS.ImageCompResults.SelectedIndex < BS.ImageCompResults.CurrentChartData.length - 1) {
+        BS.ImageCompResults.SelectedIndex++;
+        BS.ImageCompResults.updateView();
+      }
     }
   };
 
   BS.ImageCompResults.getData();
+  document.addEventListener('keydown', BS.ImageCompResults.keyDown);
   
 </script>
