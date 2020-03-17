@@ -3,6 +3,7 @@
 <%@ page import="novemberdobby.teamcity.imageComp.common.Constants" %>
 
 <c:set var="artifact_lookup_url" value="<%=Constants.ARTIFACT_LOOKUP_URL%>"/>
+<c:set var="artifact_results_path" value="<%=Constants.ARTIFACTS_RESULT_PATH%>"/>
 
 <script src="${resources}js/Chart.min.2_9_3.js"></script>
 <script src="${resources}js/moment.min.2_24_0.js"></script>
@@ -44,15 +45,16 @@
     <br>
     <select id="img_comp_opt_view_mode" onchange="BS.ImageCompResults.updateView()">
       <option value="sxs">Side by side</option>
-      <option value="diff">Diff slider</option> <%-- TODO --%>
+      <option value="slider">Diff slider</option>
+      <option value="diff">Diff image</option>
     </select>
   </div>
 </div>
 
-<%-- TODO: _diff image mode (check it exists) --%>
 <div id="statistics_container" style="display: none;">
 
-  <div id="statistics_images_sxs" style="border: 2px solid black; display: none; height: min-content;">
+  <%-- old image on left, new image on right --%>
+  <div id="statistics_images_sxs" class="statistics_images" style="border: 2px solid black; display: none; height: min-content;">
     <div style="width: 50%; border-right: 1px solid black;">
       <div style="overflow: hidden; padding: 4px; font-weight: bold; border-bottom: 2px solid black; text-align: left;">
         <a id="img_comp_left_label_sxs" target="_blank"></a>
@@ -67,25 +69,50 @@
     </div>
   </div>
 
-  <div id="statistics_images_diff" style="border: 2px solid black; display: none; height: min-content;">
+  <%-- one large image with slider (starts with old image on left half, new on right half) --%>
+  <div id="statistics_images_slider" class="statistics_images" style="border: 2px solid black; display: none; height: min-content;">
     <div style="display: flex; border-bottom: 2px solid black;">
       <div style="overflow: hidden; padding: 4px; font-weight: bold;">
-        <a id="img_comp_left_label_diff" target="_blank"></a>
+        <a id="img_comp_left_label_slider" target="_blank"></a>
       </div>
       <div style="overflow: hidden; padding: 4px; font-weight: bold; margin-left: auto;">
-        <a id="img_comp_right_label_diff" target="_blank"></a>
+        <a id="img_comp_right_label_slider" target="_blank"></a>
       </div>
     </div>
 
     <div class="slider">
       <div class="slider responsive">
         <div class="left image">
-          <img id="img_comp_left_diff" style="display:block;"/>
+          <img id="img_comp_left_slider" style="display:block;"/>
         </div>
         <div class="right image">
-          <img id="img_comp_right_diff" style="display:block;"/>
+          <img id="img_comp_right_slider" style="display:block;"/>
         </div>
       </div>
+    </div>
+  </div>
+  
+  <%-- old image on left, pre-generated difference image in middle, new image on right --%>
+  <div id="statistics_images_diff" class="statistics_images" style="border: 2px solid black; display: none; height: min-content;">
+    <div style="width: 33%; border-right: 1px solid black;">
+      <div style="overflow: hidden; padding: 4px; font-weight: bold; border-bottom: 2px solid black; text-align: left;">
+        <a id="img_comp_left_label_diff" target="_blank"></a>
+      </div>
+      <img id="img_comp_left_diff" style="width: 100%; display: block;">
+    </div>
+
+    <div style="width: 34%; border-right: 1px solid black;">
+      <div style="overflow: hidden; padding: 4px; font-weight: bold; border-bottom: 2px solid black; text-align: center;">
+        <a id="img_comp_difference_image" target="_blank"></a>
+      </div>
+      <img id="img_comp_difference" style="width: 100%; display: block;">
+    </div>
+
+    <div style="width: 33%; border-left: 1px solid black;">
+      <div style="overflow: hidden; padding: 4px; font-weight: bold; border-bottom: 2px solid black; text-align: right;">
+        <a id="img_comp_right_label_diff" target="_blank"></a>
+      </div>
+      <img id="img_comp_right_diff" style="width: 100%; display: block;">
     </div>
   </div>
 
@@ -192,8 +219,7 @@
     },
 
     drawGraph: function() {
-      BS.Util.hide('statistics_images_sxs');
-      BS.Util.hide('statistics_images_diff');
+      $j('.statistics_images').css("display", "none");
       BS.Util.show('img_comp_hint');
       var targetArtifact = $('img_comp_opt_artifact').value;
       var targetStat = $('img_comp_opt_stats').value;
@@ -308,19 +334,25 @@
               var compType = $('img_comp_opt_view_mode').value;
 
               BS.Util.hide('img_comp_hint');
-              $('statistics_images_sxs').style.display = "none";
-              $('statistics_images_diff').style.display = "none";
-              $('statistics_images_' + compType).style.display = compType == "diff" ? "" : "flex";
+              $j('.statistics_images').css("display", "none");
+              $('statistics_images_' + compType).style.display = (compType == "sxs" || compType == "diff") ? "flex" : "";
               
+              if(compType == "diff") {
+                var extension = artifact.split('.').pop();
+                var diffImage = "${artifact_results_path}/" + artifact.substring(0, artifact.length - (extension.length + 1)) + "_diff." + extension;
+                $('img_comp_difference').src = $('img_comp_difference_image').href = "/repository/download/${buildTypeExtID}/" + thisBuild.id + ":id/" + diffImage;
+                $('img_comp_difference_image').innerText = "Diff image";
+              }
+
               $('img_comp_left_' + compType).src = "/repository/download/${buildTypeExtID}/" + baselineId + ":id/" + artifact;
+              $('img_comp_right_' + compType).src = "/repository/download/${buildTypeExtID}/" + thisBuild.id + ":id/" + artifact;
+
               $('img_comp_left_label_' + compType).href = "/viewLog.html?buildId=" + baselineId;
               $('img_comp_left_label_' + compType).innerText = "Baseline: #" + baselineNumber;
-
-              $('img_comp_right_' + compType).src = "/repository/download/${buildTypeExtID}/" + thisBuild.id + ":id/" + artifact;
               $('img_comp_right_label_' + compType).href = "/viewLog.html?buildId=" + thisBuild.id;
               $('img_comp_right_label_' + compType).innerText = "This build: #" + thisBuild.number;
 
-              if(compType == "diff" && BS.ImageCompResults.SliderInit == undefined) {
+              if(compType == "slider" && BS.ImageCompResults.SliderInit == undefined) {
                 BS.ImageCompResults.SliderInit = true;
                 $j('.slider').slider();
               }
