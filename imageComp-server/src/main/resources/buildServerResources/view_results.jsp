@@ -11,7 +11,7 @@
 <link rel="stylesheet" type="text/css" href="${resources}css/imgslider.min.css">
 
 <forms:saving id="getImgDataProgress"/>
-
+<%-- TODO: show which one we're looking at on the graph --%>
 <%-- TODO: permalink button that goes straight to a provided artifact/stat/count --%>
 <div id="img_comp_options" style="display: none; border: 1px solid #868686; border-style: double; margin-bottom: 1em; margin-right: 0.5em; background: #e4e4e4;">
   <div style="padding: 0.25em; width: min-content; margin: 0.25em;">
@@ -47,6 +47,7 @@
       <option value="sxs">Side by side</option>
       <option value="slider">Diff slider</option>
       <option value="diff">Diff image</option>
+      <option value="gif">Animated diff</option>
     </select>
   </div>
 </div>
@@ -113,6 +114,15 @@
         <a id="img_comp_right_label_diff" target="_blank"></a>
       </div>
       <img id="img_comp_right_diff" style="width: 100%; display: block;">
+    </div>
+  </div>
+  
+  <%-- pre-generated animated gif of differences --%>
+  <div id="statistics_images_gif" class="statistics_images" style="border: 2px solid black; display: none; height: min-content;">
+    <div style="width: 100%; border-right: 1px solid black;">
+      <div style="overflow: hidden; padding: 4px; font-weight: bold; border-bottom: 2px solid black; text-align: left;">
+      <img id="img_comp_gif_diff" style="width: 100%; display: block;">
+      </div>
     </div>
   </div>
 
@@ -338,23 +348,27 @@
               $('statistics_images_' + compType).style.display = (compType == "sxs" || compType == "diff") ? "flex" : "";
               
               if(compType == "diff") {
-                var extension = artifact.split('.').pop();
-                var diffImage = "${artifact_results_path}/" + artifact.substring(0, artifact.length - (extension.length + 1)) + "_diff." + extension;
+                var diffImage = BS.ImageCompResults.getResultFileName(artifact, "_diff");
                 $('img_comp_difference').src = $('img_comp_difference_image').href = "/repository/download/${buildTypeExtID}/" + thisBuild.id + ":id/" + diffImage;
                 $('img_comp_difference_image').innerText = "Diff image";
               }
+              
+              if(compType == "gif") {
+                var animImage = BS.ImageCompResults.getResultFileName(artifact, "_animated", "gif");
+                $('img_comp_gif_diff').src = "/repository/download/${buildTypeExtID}/" + thisBuild.id + ":id/" + animImage;
+              } else {
+                $('img_comp_left_' + compType).src = "/repository/download/${buildTypeExtID}/" + baselineId + ":id/" + artifact;
+                $('img_comp_right_' + compType).src = "/repository/download/${buildTypeExtID}/" + thisBuild.id + ":id/" + artifact;
 
-              $('img_comp_left_' + compType).src = "/repository/download/${buildTypeExtID}/" + baselineId + ":id/" + artifact;
-              $('img_comp_right_' + compType).src = "/repository/download/${buildTypeExtID}/" + thisBuild.id + ":id/" + artifact;
+                $('img_comp_left_label_' + compType).href = "/viewLog.html?buildId=" + baselineId;
+                $('img_comp_left_label_' + compType).innerText = "Baseline: #" + baselineNumber;
+                $('img_comp_right_label_' + compType).href = "/viewLog.html?buildId=" + thisBuild.id;
+                $('img_comp_right_label_' + compType).innerText = "This build: #" + thisBuild.number;
 
-              $('img_comp_left_label_' + compType).href = "/viewLog.html?buildId=" + baselineId;
-              $('img_comp_left_label_' + compType).innerText = "Baseline: #" + baselineNumber;
-              $('img_comp_right_label_' + compType).href = "/viewLog.html?buildId=" + thisBuild.id;
-              $('img_comp_right_label_' + compType).innerText = "This build: #" + thisBuild.number;
-
-              if(compType == "slider" && BS.ImageCompResults.SliderInit == undefined) {
-                BS.ImageCompResults.SliderInit = true;
-                $j('.slider').slider();
+                if(compType == "slider" && BS.ImageCompResults.SliderInit == undefined) {
+                  BS.ImageCompResults.SliderInit = true;
+                  $j('.slider').slider();
+                }
               }
             }
             else
@@ -363,6 +377,11 @@
             }
         }
       });
+    },
+
+    getResultFileName(artifact, suffix, forceExt) {
+      var extension = (forceExt != undefined) ? forceExt : artifact.split('.').pop();
+      return "${artifact_results_path}/" + artifact.substring(0, artifact.length - (extension.length + 1)) + suffix + "." + extension;
     },
 
     keyDown(e) {
