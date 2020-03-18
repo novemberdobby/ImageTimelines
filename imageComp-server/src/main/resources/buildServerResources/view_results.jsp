@@ -11,7 +11,6 @@
 <link rel="stylesheet" type="text/css" href="${resources}css/imgslider.min.css">
 
 <forms:saving id="getImgDataProgress"/>
-<%-- TODO: show which one we're looking at on the graph --%>
 <%-- TODO: permalink button that goes straight to a provided artifact/stat/count --%>
 <div id="img_comp_options" style="display: none; border: 1px solid #868686; border-style: double; margin-bottom: 1em; margin-right: 0.5em; background: #e4e4e4;">
   <div style="padding: 0.25em; width: min-content; margin: 0.25em;">
@@ -225,6 +224,7 @@
       }
 
       //show initial graph
+      BS.ImageCompResults.SelectedIndex = -1;
       BS.ImageCompResults.drawGraph();
     },
 
@@ -298,6 +298,12 @@
           label: targetStat,
           data: values,
           backgroundColor: context => {
+
+            //highlight if currently selected
+            if(BS.ImageCompResults.SelectedIndex == context.dataIndex) {
+              return "rgba(128, 128, 128, 255)";
+            }
+
             var value = context.dataset.data[context.dataIndex];
             var normalised = invLerp(targetMin, targetMax, value);
             if(normalised < 0.5) {
@@ -320,6 +326,8 @@
       if(BS.ImageCompResults.SelectedIndex == -1 || BS.ImageCompResults.CurrentChartData == undefined) {
         return;
       }
+
+      BS.ImageCompResults.Chart.update();
       
       var thisBuild = BS.ImageCompResults.CurrentChartData[BS.ImageCompResults.SelectedIndex];
       var artifact = $('img_comp_opt_artifact').value;
