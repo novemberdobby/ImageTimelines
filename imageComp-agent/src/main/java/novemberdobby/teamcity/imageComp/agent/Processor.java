@@ -210,7 +210,7 @@ public class Processor extends AgentLifeCycleAdapter {
             File tempGifImage = new File(diffImagesTemp, artifactNameGif);
 
             File[] images = new File[] { referenceImage, newImage };
-            String[] annotations = new String[] { String.format("Baseline: #%s", build.getBuildNumber()), String.format("New: #%s", referenceVersion) };
+            String[] annotations = new String[] { String.format("Baseline: #%s", build.getBuildNumber()), String.format("This build: #%s", referenceVersion) };
 
             if(imageMagickGif(magick, images, annotations, tempGifImage)) {
                 log.message(String.format("##teamcity[publishArtifacts '%s => %s']", tempGifImage.getAbsolutePath(), Constants.ARTIFACTS_RESULT_PATH));

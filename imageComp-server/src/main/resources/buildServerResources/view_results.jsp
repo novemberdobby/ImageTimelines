@@ -34,7 +34,7 @@
   <div style="padding: 0.25em; width: min-content; margin: 0.25em;">
     Statistic
     <br>
-    <select id="img_comp_opt_stats" onchange="BS.ImageCompResults.drawGraph()">
+    <select id="img_comp_opt_metric" onchange="BS.ImageCompResults.drawGraph()">
       <option value="-">-</option>
     </select>
   </div>
@@ -186,6 +186,11 @@
       //fill artifact dropdown
       var ddArtifacts = $('img_comp_opt_artifact');
       var oldArtifact = ddArtifacts.value;
+      if(BS.ImageCompResults.SetArtifact != undefined) {
+        oldArtifact = BS.ImageCompResults.SetArtifact;
+        BS.ImageCompResults.SetArtifact = undefined;
+      }
+
       ddArtifacts.innerHTML = "";
       for(var art in Artifacts) {
         ddArtifacts.options.add(new Option(art, art))
@@ -206,25 +211,29 @@
     changeArtifact: function() {
       //fill stats dropdown based on selected artifact
       var ddArtifacts = $('img_comp_opt_artifact');
-      var ddStats = $('img_comp_opt_stats');
-      var oldStat = ddStats.value;
-      ddStats.innerHTML = "";
+      var ddMetrics = $('img_comp_opt_metric');
+      var oldMetric = ddMetrics.value;
+      if(BS.ImageCompResults.SetMetric != undefined) {
+        oldMetric = BS.ImageCompResults.SetMetric;
+        BS.ImageCompResults.SetMetric = undefined;
+      }
+
+      ddMetrics.innerHTML = "";
 
       const targetArtifact = Artifacts[ddArtifacts.value];
       if(targetArtifact != undefined) {
         for(var stat in targetArtifact) {
-          ddStats.options.add(new Option(stat, stat))
+          ddMetrics.options.add(new Option(stat, stat))
         }
       }
       
-      var newStat = ddStats.value;
-      ddStats.value = oldStat;
-      if(ddStats.value == "") {
-        ddStats.value = newStat;
+      var newMetric = ddMetrics.value;
+      ddMetrics.value = oldMetric;
+      if(ddMetrics.value == "") {
+        ddMetrics.value = newMetric;
       }
 
       //show initial graph
-      BS.ImageCompResults.SelectedIndex = -1;
       BS.ImageCompResults.drawGraph();
     },
 
@@ -232,7 +241,7 @@
       $j('.statistics_images').css("display", "none");
       BS.Util.show('img_comp_hint');
       var targetArtifact = $('img_comp_opt_artifact').value;
-      var targetStat = $('img_comp_opt_stats').value;
+      var targetMetric = $('img_comp_opt_metric').value;
       
       //TODO: support showing multiple sets e.g. psnr + dssim etc. will need to reintroduce category spacing & make colours show metric
       //set up chart
@@ -283,7 +292,7 @@
       BS.ImageCompResults.Chart.data.datasets.clear();
 
       //collect data
-      const target = Artifacts[targetArtifact][targetStat];
+      const target = Artifacts[targetArtifact][targetMetric];
       BS.ImageCompResults.CurrentChartData = target;
       const values = target.map(d => d.value);
       var targetMin = 0; //TODO: is this OK to assume for all metrics?
@@ -295,7 +304,7 @@
 
       BS.ImageCompResults.Chart.data.labels = target.map(d => d.number);
       BS.ImageCompResults.Chart.data.datasets = [{
-          label: targetStat,
+          label: targetMetric,
           data: values,
           backgroundColor: context => {
 
@@ -320,6 +329,13 @@
       
       BS.ImageCompResults.Chart.options.title.text = "Showing " + values.length + " values";
       BS.ImageCompResults.Chart.update();
+
+      if(values.length > 0) {
+        BS.ImageCompResults.SelectedIndex = values.length - 1;
+        BS.ImageCompResults.updateView();
+      } else {
+        BS.ImageCompResults.SelectedIndex = -1;
+      }
     },
 
     updateView: function() {
@@ -406,8 +422,15 @@
       }
     }
   };
+  
+  var params = new URLSearchParams(window.location.search);
+  if(params.has("ic_count")) $('img_comp_opt_count').value = params.get("ic_count");
+  if(params.has("ic_view_mode")) $('img_comp_opt_view_mode').value = params.get("ic_view_mode");
+
+  BS.ImageCompResults.SetArtifact = params.get("ic_artifact");
+  BS.ImageCompResults.SetMetric = params.get("ic_metric");
 
   BS.ImageCompResults.getData();
   document.addEventListener('keydown', BS.ImageCompResults.keyDown);
-  
+
 </script>
