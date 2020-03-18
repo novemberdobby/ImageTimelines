@@ -12,7 +12,6 @@ import org.springframework.web.servlet.ModelAndView;
 import jetbrains.buildServer.Build;
 import jetbrains.buildServer.controllers.BaseController;
 import jetbrains.buildServer.serverSide.ArtifactInfo;
-import jetbrains.buildServer.serverSide.ProjectManager;
 import jetbrains.buildServer.serverSide.SBuild;
 import jetbrains.buildServer.serverSide.SBuildServer;
 import jetbrains.buildServer.serverSide.SBuildType;
@@ -38,7 +37,6 @@ public class DownloadedArtifactsRequest extends BaseController {
     protected ModelAndView doHandle(HttpServletRequest request, HttpServletResponse response) throws Exception {
         
         SUser user = SessionUser.getUser(request);
-        ProjectManager projects = m_server.getProjectManager();
 
         Long buildId = -1L;
         try {
