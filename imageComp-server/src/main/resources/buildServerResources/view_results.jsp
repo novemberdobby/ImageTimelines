@@ -10,8 +10,17 @@
 <script src="${resources}js/imgslider.min.js"></script>
 <link rel="stylesheet" type="text/css" href="${resources}css/imgslider.min.css">
 
+<style type="text/css">
+.icPermalink {
+  background: url(${resources}images/permalink.png) 0 0 no-repeat;
+  width: 16px;
+  height: 16px;
+  display: inline-block;
+  vertical-align: text-bottom;
+}
+</style>
+
 <forms:saving id="getImgDataProgress"/>
-<%-- TODO: permalink button that goes straight to a provided artifact/stat/count --%>
 <div id="img_comp_options" style="display: none; border: 1px solid #868686; border-style: double; margin-bottom: 1em; margin-right: 0.5em; background: #e4e4e4;">
   <div style="padding: 0.25em; width: min-content; margin: 0.25em;">
     Builds
@@ -37,6 +46,12 @@
     <select id="img_comp_opt_metric" onchange="BS.ImageCompResults.drawGraph()">
       <option value="-">-</option>
     </select>
+  </div>
+
+  <div style="padding: 0.25em; width: min-content; margin: 0.25em;">
+    Permalink
+    <br>
+    <a class="icPermalink" href="#" onclick="BS.ImageCompResults.gotoPermaLink()"></a>
   </div>
   
   <div style="padding: 0.25em; width: min-content; margin: 0.25em; margin-left: auto; text-align: right;">
@@ -420,6 +435,16 @@
         BS.ImageCompResults.SelectedIndex++;
         BS.ImageCompResults.updateView();
       }
+    },
+
+    gotoPermaLink() {
+      var newUrl = "${viewTypeUrl}"
+        + "&ic_count=" + $('img_comp_opt_count').value
+        + "&ic_view_mode=" + $('img_comp_opt_view_mode').value
+        + "&ic_artifact=" + $('img_comp_opt_artifact').value
+        + "&ic_metric=" + $('img_comp_opt_metric').value;
+      
+      document.location = newUrl;
     }
   };
   

@@ -5,6 +5,7 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 
 import jetbrains.buildServer.serverSide.SBuildType;
+import jetbrains.buildServer.serverSide.WebLinks;
 import jetbrains.buildServer.serverSide.auth.Permission;
 import jetbrains.buildServer.users.SUser;
 import jetbrains.buildServer.web.openapi.buildType.BuildTypeTab;
@@ -18,10 +19,12 @@ import novemberdobby.teamcity.imageComp.common.Constants;
 public class ImagesTab extends BuildTypeTab {
 
     String m_resourcePath;
+    WebLinks m_links;
 
-    public ImagesTab(WebControllerManager manager, ProjectManager projManager, PluginDescriptor descriptor) {
+    public ImagesTab(WebControllerManager manager, ProjectManager projManager, PluginDescriptor descriptor, WebLinks links) {
         super(Constants.TAB_ID, Constants.TAB_TITLE, manager, projManager, descriptor.getPluginResourcesPath("view_results.jsp"));
         m_resourcePath = descriptor.getPluginResourcesPath();
+        m_links = links;
     }
 
     @Override
@@ -29,6 +32,9 @@ public class ImagesTab extends BuildTypeTab {
         model.put("resources", m_resourcePath);
         model.put("buildTypeIntID", buildType.getBuildTypeId());
         model.put("buildTypeExtID", buildType.getExternalId());
+
+        //add the address for viewing this tab, it could all be done in JS but ew
+        model.put("viewTypeUrl", String.format("%s&tab=%s", m_links.getConfigurationHomePageUrl(buildType), Constants.TAB_ID));
     }
 
     @Override
