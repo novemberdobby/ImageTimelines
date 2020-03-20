@@ -1,5 +1,8 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="forms" tagdir="/WEB-INF/tags/forms" %>
+<%@ taglib prefix="l" tagdir="/WEB-INF/tags/layout" %>
+<%@ taglib prefix="bs" tagdir="/WEB-INF/tags" %>
+
 <%@ page import="novemberdobby.teamcity.imageComp.common.Constants" %>
 
 <c:set var="artifact_lookup_url" value="<%=Constants.ARTIFACT_LOOKUP_URL%>"/>
@@ -11,12 +14,20 @@
 <link rel="stylesheet" type="text/css" href="${resources}css/imgslider.min.css">
 
 <style type="text/css">
-.icPermalink {
-  background: url(${resources}images/permalink.png) 0 0 no-repeat;
-  width: 16px;
-  height: 16px;
-  display: inline-block;
-  vertical-align: text-bottom;
+.icOption {
+  padding: 0.25em;
+  width: min-content;
+  margin: 0.25em; 
+}
+.icLabel {
+  overflow: hidden;
+  padding: 4px;
+  font-weight: bold;
+  border-bottom: 2px solid black;
+}
+.icImage {
+  width: 100%;
+  display: block;
 }
 </style>
 
@@ -34,27 +45,21 @@
     </select>
   </div>
 
-  <div style="padding: 0.25em; width: min-content; margin: 0.25em;">
+  <div class="icOption">
     Artifact
     <br>
     <select id="img_comp_opt_artifact" onchange="BS.ImageCompResults.changeArtifact()"></select>
   </div>
 
-  <div style="padding: 0.25em; width: min-content; margin: 0.25em;">
+  <div class="icOption">
     Statistic
     <br>
     <select id="img_comp_opt_metric" onchange="BS.ImageCompResults.drawGraph()">
       <option value="-">-</option>
     </select>
   </div>
-
-  <div style="padding: 0.25em; width: min-content; margin: 0.25em;">
-    Permalink
-    <br>
-    <a class="icPermalink" href="#" onclick="BS.ImageCompResults.gotoPermaLink()"></a>
-  </div>
   
-  <div style="padding: 0.25em; width: min-content; margin: 0.25em; margin-left: auto; text-align: right;">
+  <div class="icOption">
     View mode
     <br>
     <select id="img_comp_opt_view_mode" onchange="BS.ImageCompResults.updateView()">
@@ -64,6 +69,28 @@
       <option value="gif">Animated diff</option>
     </select>
   </div>
+  
+  <div style="margin-left: auto; padding: 1em;">
+    <bs:actionsPopup controlId="icActions" popup_options="className: 'quickLinksMenuPopup'">
+      <jsp:attribute name="content">
+        <div>
+          <ul class="menuList">
+            <l:li>
+              <a href="#" onclick="BS.ImageCompResults.gotoPermaLink()">Go to permalink</a>
+            </l:li>
+            <l:li>
+              <a href="#" onclick="BS.ImageCompResults.createStatsGraph(false)">Create graph (on build type)</a>
+            </l:li>
+            <l:li>
+              <a href="#" onclick="BS.ImageCompResults.createStatsGraph(true)">Create graph (on parent project)</a>
+            </l:li>
+          </ul>
+        </div>
+      </jsp:attribute>
+      <jsp:body>Actions</jsp:body>
+    </bs:actionsPopup>
+    <forms:saving id="createGraphProgress"/>
+  </div>
 </div>
 
 <div id="statistics_container" style="display: none;">
@@ -71,16 +98,16 @@
   <%-- old image on left, new image on right --%>
   <div id="statistics_images_sxs" class="statistics_images" style="border: 2px solid black; display: none; height: min-content;">
     <div style="width: 50%; border-right: 1px solid black;">
-      <div style="overflow: hidden; padding: 4px; font-weight: bold; border-bottom: 2px solid black; text-align: left;">
+      <div class="icLabel" style="text-align: left;">
         <a id="img_comp_left_label_sxs" target="_blank"></a>
       </div>
-      <img id="img_comp_left_sxs" style="width: 100%; display: block;">
+      <img class="icImage" id="img_comp_left_sxs">
     </div>
     <div style="width: 50%; border-left: 1px solid black;">
-      <div style="overflow: hidden; padding: 4px; font-weight: bold; border-bottom: 2px solid black; text-align: right;">
+      <div class="icLabel" style="text-align: right;">
         <a id="img_comp_right_label_sxs" target="_blank"></a>
       </div>
-      <img id="img_comp_right_sxs" style="width: 100%; display: block;">
+      <img class="icImage" id="img_comp_right_sxs">
     </div>
   </div>
 
@@ -110,33 +137,31 @@
   <%-- old image on left, pre-generated difference image in middle, new image on right --%>
   <div id="statistics_images_diff" class="statistics_images" style="border: 2px solid black; display: none; height: min-content;">
     <div style="width: 33%; border-right: 1px solid black;">
-      <div style="overflow: hidden; padding: 4px; font-weight: bold; border-bottom: 2px solid black; text-align: left;">
+      <div class="icLabel" style="text-align: left;">
         <a id="img_comp_left_label_diff" target="_blank"></a>
       </div>
-      <img id="img_comp_left_diff" style="width: 100%; display: block;">
+      <img class="icImage" id="img_comp_left_diff">
     </div>
 
     <div style="width: 34%; border-right: 1px solid black;">
-      <div style="overflow: hidden; padding: 4px; font-weight: bold; border-bottom: 2px solid black; text-align: center;">
+      <div class="icLabel" style="text-align: center;">
         <a id="img_comp_difference_image" target="_blank"></a>
       </div>
-      <img id="img_comp_difference" style="width: 100%; display: block;">
+      <img class="icImage" id="img_comp_difference">
     </div>
 
     <div style="width: 33%; border-left: 1px solid black;">
-      <div style="overflow: hidden; padding: 4px; font-weight: bold; border-bottom: 2px solid black; text-align: right;">
+      <div class="icLabel" style="text-align: right;">
         <a id="img_comp_right_label_diff" target="_blank"></a>
       </div>
-      <img id="img_comp_right_diff" style="width: 100%; display: block;">
+      <img class="icImage" id="img_comp_right_diff">
     </div>
   </div>
   
   <%-- pre-generated animated gif of differences --%>
   <div id="statistics_images_gif" class="statistics_images" style="border: 2px solid black; display: none; height: min-content;">
     <div style="width: 100%; border-right: 1px solid black;">
-      <div style="overflow: hidden; padding: 4px; font-weight: bold; border-bottom: 2px solid black; text-align: left;">
-      <img id="img_comp_gif_diff" style="width: 100%; display: block;">
-      </div>
+      <img class="icImage" id="img_comp_gif_diff">
     </div>
   </div>
 
@@ -438,22 +463,62 @@
     },
 
     gotoPermaLink() {
-      var newUrl = "${viewTypeUrl}"
+      var newUrl = "${viewTypeImageCompUrl}"
         + "&ic_count=" + $('img_comp_opt_count').value
-        + "&ic_view_mode=" + $('img_comp_opt_view_mode').value
         + "&ic_artifact=" + $('img_comp_opt_artifact').value
-        + "&ic_metric=" + $('img_comp_opt_metric').value;
+        + "&ic_metric=" + $('img_comp_opt_metric').value
+        + "&ic_view_mode=" + $('img_comp_opt_view_mode').value;
       
       document.location = newUrl;
+    },
+
+    createStatsGraph(onParentProject) {
+
+      BS.Util.show('createGraphProgress');
+      var artifact = $('img_comp_opt_artifact').value;
+      var metric = $('img_comp_opt_metric').value;
+
+      var source = onParentProject ? ('${buildTypeExtID}: ') : '';
+      var title = 'Diff report for ' + source + artifact + ' (metric: ' + metric + ')';
+      var seriesTitle = artifact + ' (' + metric + ')';
+      var statistic = 'ic_' + artifact + '_' + metric;
+      var sourceBuildType = (onParentProject ? ' sourceBuildTypeId="${buildTypeExtID}"' : '');
+
+      var xml = [
+        '<graph title="' + title + '" seriesTitle="' + seriesTitle + '" format="text">',
+          '<valueType key="' + statistic + '" title="' + statistic  + '"' + sourceBuildType + '/>',
+        '</graph>'
+      ];
+
+      BS.ajaxRequest(window['base_uri'] + '/editChart.html', {
+        method: "POST",
+        parameters: {
+          'action': 'addChart',
+          'projectId': '${projectIntId}',
+          'buildTypeId': (onParentProject ? '' : '${buildTypeExtID}'),
+          'chartGroup': (onParentProject ? 'project-graphs' : 'buildtype-graphs'),
+          'newXml': xml.join('')
+        },
+        onComplete: function(transport) {
+            BS.Util.hide('createGraphProgress');
+            if(transport.status == 200)
+            {
+              document.location = onParentProject ? "${viewProjectStatsUrl}" : "${viewTypeStatsUrl}";
+            }
+            else
+            {
+              alert('Failed to create graph(code ' + transport.status + ')');
+            }
+        }
+      });
     }
   };
   
   var params = new URLSearchParams(window.location.search);
   if(params.has("ic_count")) $('img_comp_opt_count').value = params.get("ic_count");
-  if(params.has("ic_view_mode")) $('img_comp_opt_view_mode').value = params.get("ic_view_mode");
-
   BS.ImageCompResults.SetArtifact = params.get("ic_artifact");
   BS.ImageCompResults.SetMetric = params.get("ic_metric");
+  if(params.has("ic_view_mode")) $('img_comp_opt_view_mode').value = params.get("ic_view_mode");
 
   BS.ImageCompResults.getData();
   document.addEventListener('keydown', BS.ImageCompResults.keyDown);

@@ -32,9 +32,13 @@ public class ImagesTab extends BuildTypeTab {
         model.put("resources", m_resourcePath);
         model.put("buildTypeIntID", buildType.getBuildTypeId());
         model.put("buildTypeExtID", buildType.getExternalId());
+        model.put("projectIntId", buildType.getProjectId());
 
         //add the address for viewing this tab, it could all be done in JS but ew
-        model.put("viewTypeUrl", String.format("%s&tab=%s", m_links.getConfigurationHomePageUrl(buildType), Constants.TAB_ID));
+        model.put("viewTypeImageCompUrl", String.format("%s&tab=%s", m_links.getConfigurationHomePageUrl(buildType), Constants.TAB_ID));
+        
+        model.put("viewTypeStatsUrl", String.format("%s&tab=buildTypeStatistics", m_links.getConfigurationHomePageUrl(buildType)));
+        model.put("viewProjectStatsUrl", String.format("%s&tab=stats", m_links.getProjectPageUrl(buildType.getProjectExternalId())));
     }
 
     @Override
