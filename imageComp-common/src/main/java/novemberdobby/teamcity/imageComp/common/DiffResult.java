@@ -12,7 +12,6 @@ public class DiffResult {
         //so fudge the "result" and just try to send a number back
         if(!threwException) {
 
-            //TODO: is this a sensible result?
             if("1.#INF".equals(output)) {
                 DifferenceAmount = 0D;
                 Success = true;
