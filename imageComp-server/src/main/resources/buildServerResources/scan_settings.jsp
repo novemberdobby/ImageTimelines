@@ -1,5 +1,4 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
-<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <%@ taglib prefix="forms" tagdir="/WEB-INF/tags/forms" %>
 <%@ taglib prefix="props" tagdir="/WEB-INF/tags/props" %>
 <%@ taglib prefix="bs" tagdir="/WEB-INF/tags" %>
@@ -12,6 +11,7 @@
 <c:set var="diff_type_default" value="<%=Constants.FEATURE_SETTING_DIFF_METRIC_DEFAULT%>"/>
 <c:set var="hidden_agent_req_im" value="<%=Constants.FEATURE_SETTING_HIDDEN_REQ_IM%>"/>
 <c:set var="generate_gif" value="<%=Constants.FEATURE_SETTING_GENERATE_GIF%>"/>
+<c:set var="artifact_popup_url" value="<%=Constants.FEATURE_ARTIFACTS_POPUP_URL%>"/>
 
 <c:set var="hidden_agent_req_im_value" value="<%=Constants.TOOL_IM_PATH_PARAM%>"/>
 
@@ -71,12 +71,15 @@
   <th>Images:</th>
   <td>
     <c:set var="text">Artifacts to process for each build. Use <strong>archive.zip!/image.jpg</strong> to access archives</c:set>
-    <props:multilineProperty name="${paths_list}" rows="5" cols="70" linkTitle="" expanded="true" note="${text}">
-      <%--TODO: list artifacts from last build or something - won't work for files inside zips tho--%>
-      <%--<jsp:attribute name="afterTextField">
-        <bs:agentArtifactsTree fieldId="${paths_list}" buildTypeId="${buildForm.externalId}"/>
-      </jsp:attribute>--%>
-    </props:multilineProperty>
+    <props:multilineProperty name="${paths_list}" rows="5" cols="70" linkTitle="" expanded="true" note="${text}"/>
+
+    <%-- no artifacts in abstract builds --%>
+    <c:if test='${!buildForm.isTemplate()}'>
+      <div style="padding-top: 0.5em;">
+        <forms:button id="btnShowIcArtifactPicker" onclick="BS.ImageComparison.showArtifactsPopup()" className="btn btn_mini">Pick from last build</forms:button>
+      </div>
+    </c:if>
+
     <span class="error" id="error_${paths_list}"></span>
   </td>
 </tr>
@@ -138,6 +141,19 @@
         option += selected.selectedOptions[i].value + ",";
       }
       $('${diff_type}').value = option;
+    },
+
+    showArtifactsPopup: function() {
+      if(BS.ImageComparison.ArtifactsPopup == undefined) {
+        BS.ImageComparison.ArtifactsPopup = new BS.Popup("addIcArtifactsPopup", {
+          hideOnMouseOut: false,
+          hideOnMouseClickOutside: true,
+          shift: {x: 0, y: 20},
+          url: base_uri + "${artifact_popup_url}?buildType=${buildForm.externalId}"
+        });
+      }
+
+      BS.ImageComparison.ArtifactsPopup.showPopupNearElement($('btnShowIcArtifactPicker'));
     }
   };
   

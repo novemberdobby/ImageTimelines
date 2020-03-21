@@ -15,6 +15,9 @@ public class Constants {
     public static final String FEATURE_SETTING_HIDDEN_REQ_IM = "hidden_req_im";
     public static final String FEATURE_SETTING_GENERATE_GIF = "generate_gif";
 
+    public static final String FEATURE_ARTIFACTS_POPUP_URL = "/imageCompArtifactsPopup.html";
+    public static final String FEATURE_ARTIFACTS_POPUP_JSP = "scan_settings_artifacts.jsp";
+
     public static final String REDIRECT_TAB_ID = "build_to_type_redirect";
 	public static final String REDIRECT_TAB_JSP = "redirect_to_type_tab.jsp";
 

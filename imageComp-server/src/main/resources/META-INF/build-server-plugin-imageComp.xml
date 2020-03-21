@@ -7,4 +7,5 @@
        <bean class="novemberdobby.teamcity.imageComp.server.ScanFeature"/>
        <bean class="novemberdobby.teamcity.imageComp.server.RedirectToTypeTab"/>
        <bean class="novemberdobby.teamcity.imageComp.server.DownloadedArtifactsRequest"/>
+       <bean class="novemberdobby.teamcity.imageComp.server.ScanFeatureArtifacts"/>
 </beans>
