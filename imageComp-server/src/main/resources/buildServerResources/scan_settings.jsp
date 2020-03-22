@@ -10,7 +10,7 @@
 <c:set var="diff_type" value="<%=Constants.FEATURE_SETTING_DIFF_METRIC%>"/>
 <c:set var="diff_type_default" value="<%=Constants.FEATURE_SETTING_DIFF_METRIC_DEFAULT%>"/>
 <c:set var="hidden_agent_req_im" value="<%=Constants.FEATURE_SETTING_HIDDEN_REQ_IM%>"/>
-<c:set var="generate_gif" value="<%=Constants.FEATURE_SETTING_GENERATE_GIF%>"/>
+<c:set var="generate_animated" value="<%=Constants.FEATURE_SETTING_GENERATE_ANIMATED%>"/>
 <c:set var="artifact_popup_url" value="<%=Constants.FEATURE_ARTIFACTS_POPUP_URL%>"/>
 
 <c:set var="hidden_agent_req_im_value" value="<%=Constants.TOOL_IM_PATH_PARAM%>"/>
@@ -96,8 +96,8 @@
 <tr class="advancedSetting">
   <th>Flicker:</th>
   <td>
-    <props:checkboxProperty name="${generate_gif}" value="true"/>
-    <label for="${generate_gif}">Generate animated gif of differences</label>
+    <props:checkboxProperty name="${generate_animated}" value="true"/>
+    <label for="${generate_animated}">Generate animated image of differences</label>
   </td>
 </tr>
 

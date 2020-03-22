@@ -66,7 +66,7 @@
       <option value="sxs">Side by side</option>
       <option value="slider">Diff slider</option>
       <option value="diff">Diff image</option>
-      <option value="gif">Animated diff</option>
+      <option value="anim">Animated diff</option>
     </select>
   </div>
   
@@ -168,11 +168,11 @@
     </div>
   </div>
   
-  <%-- pre-generated animated gif of differences --%>
-  <div id="statistics_images_gif" class="statistics_images" style="border: 2px solid black; display: none; height: min-content;">
+  <%-- pre-generated animated image of differences --%>
+  <div id="statistics_images_anim" class="statistics_images" style="border: 2px solid black; display: none; height: min-content;">
     <div style="width: 100%; border-right: 1px solid black;">
       <a>
-        <img class="icImage" id="img_comp_gif_diff">
+        <img class="icImage" id="img_comp_anim_diff">
       </a>
     </div>
   </div>
@@ -429,9 +429,9 @@
                 $('img_comp_difference_image').innerText = "Diff image";
               }
               
-              if(compType == "gif") {
-                var animImage = BS.ImageCompResults.getResultFileName(artifact, "_animated", "gif");
-                $('img_comp_gif_diff').src = "/repository/download/${buildTypeExtID}/" + thisBuild.id + ":id/" + animImage;
+              if(compType == "anim") {
+                var animImage = BS.ImageCompResults.getResultFileName(artifact, "_animated", "webp");
+                $('img_comp_anim_diff').src = "/repository/download/${buildTypeExtID}/" + thisBuild.id + ":id/" + animImage;
               } else {
                 $('img_comp_left_' + compType).src = "/repository/download/${buildTypeExtID}/" + baselineId + ":id/" + artifact;
                 $('img_comp_right_' + compType).src = "/repository/download/${buildTypeExtID}/" + thisBuild.id + ":id/" + artifact;
@@ -465,8 +465,9 @@
     },
 
     getResultFileName(artifact, suffix, forceExt) {
-      var extension = (forceExt != undefined) ? forceExt : artifact.split('.').pop();
-      return "${artifact_results_path}/" + artifact.substring(0, artifact.length - (extension.length + 1)) + suffix + "." + extension;
+      var presentExt = artifact.split('.').pop();
+      var extension = (forceExt != undefined) ? forceExt : presentExt;
+      return "${artifact_results_path}/" + artifact.substring(0, artifact.length - (presentExt.length + 1)) + suffix + "." + extension;
     },
 
     keyDown(e) {

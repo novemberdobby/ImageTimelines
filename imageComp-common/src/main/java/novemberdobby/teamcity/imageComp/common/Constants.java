@@ -13,7 +13,7 @@ public class Constants {
     public static final String FEATURE_SETTING_DIFF_METRIC = "diff_type";
     public static final String FEATURE_SETTING_DIFF_METRIC_DEFAULT = "dssim";
     public static final String FEATURE_SETTING_HIDDEN_REQ_IM = "hidden_req_im";
-    public static final String FEATURE_SETTING_GENERATE_GIF = "generate_gif";
+    public static final String FEATURE_SETTING_GENERATE_ANIMATED = "generate_animated";
 
     public static final String FEATURE_ARTIFACTS_POPUP_URL = "/imageCompArtifactsPopup.html";
     public static final String FEATURE_ARTIFACTS_POPUP_JSP = "scan_settings_artifacts.jsp";

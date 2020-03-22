@@ -149,6 +149,11 @@ public class Processor extends AgentLifeCycleAdapter {
                             }
 
                             compare(build, params, stored.getKey(), stored.getValue(), referenceBuildNumber, tempCacheCopy);
+
+                            if(build.getInterruptReason() != null) {
+                                log.warning("Stopping comparisons due to interrupted build");
+                                break;
+                            }
                         } else {
                             log.error(String.format("Couldn't find file in cache: %s", cachedFile.getAbsolutePath()));
                         }
@@ -157,6 +162,10 @@ public class Processor extends AgentLifeCycleAdapter {
                 } else {
                     log.error("Skipping downloads due to errors");
                 }
+            }
+
+            if(build.getInterruptReason() != null) {
+                break;
             }
         }
 
@@ -187,7 +196,7 @@ public class Processor extends AgentLifeCycleAdapter {
             String artifactNameDiff = String.format("%s_diff.%s", FilenameUtils.removeExtension(artifactName), FilenameUtils.getExtension(artifactName));
             File tempDiffImage = new File(diffImagesTemp, artPrefix + artifactNameDiff);
 
-            //TODO: support tolerance aka -fuzz
+            //TODO: support tolerance aka -fuzz and make a note of what the value was (may as well record source build too if we're gonna do that)
             DiffResult diff = imageMagickDiff(magick, metric, referenceImage, newImage, tempDiffImage);
 
             if(diff.Success) {
@@ -201,19 +210,23 @@ public class Processor extends AgentLifeCycleAdapter {
             } else {
                 log.error(String.format("Result for %s: %s", metric.toUpperCase(), diff.StandardOut));
             }
+
+            if(build.getInterruptReason() != null) {
+                return false;
+            }
         }
 
-        if("true".equals(params.get(Constants.FEATURE_SETTING_GENERATE_GIF))) {
-            String artifactNameGif = String.format("%s_animated.gif", FilenameUtils.removeExtension(artifactName));
-            File tempGifImage = new File(diffImagesTemp, artifactNameGif);
+        if("true".equals(params.get(Constants.FEATURE_SETTING_GENERATE_ANIMATED))) {
+            String artifactNameAnimated = String.format("%s_animated.webp", FilenameUtils.removeExtension(artifactName));
+            File tempAnimatedImage = new File(diffImagesTemp, artifactNameAnimated);
 
             File[] images = new File[] { referenceImage, newImage };
             String[] annotations = new String[] { String.format("Baseline: #%s", build.getBuildNumber()), String.format("This build: #%s", referenceVersion) };
 
-            if(imageMagickGif(magick, images, annotations, tempGifImage)) {
-                log.message(String.format("##teamcity[publishArtifacts '%s => %s']", tempGifImage.getAbsolutePath(), Constants.ARTIFACTS_RESULT_PATH));
+            if(imageMagickAnimate(magick, images, annotations, tempAnimatedImage)) {
+                log.message(String.format("##teamcity[publishArtifacts '%s => %s']", tempAnimatedImage.getAbsolutePath(), Constants.ARTIFACTS_RESULT_PATH));
             } else {
-                log.error(String.format("Gif creation failed for %s", tempGifImage.getAbsolutePath()));
+                log.error(String.format("Webp creation failed for %s", tempAnimatedImage.getAbsolutePath()));
             }
         }
 
@@ -249,12 +262,12 @@ public class Processor extends AgentLifeCycleAdapter {
         }
     }
 
-    boolean imageMagickGif(File toolPath, File[] images, String[] annotations, File createImage) {
+    boolean imageMagickAnimate(File toolPath, File[] images, String[] annotations, File createImage) {
         
         ByteArrayOutputStream outStream = new ByteArrayOutputStream();
         DefaultExecutor executor = new DefaultExecutor();
         executor.setStreamHandler(new PumpStreamHandler(outStream));
-        executor.setWatchdog(new ExecuteWatchdog(20000));
+        executor.setWatchdog(new ExecuteWatchdog(60000));
 
         //annotate each image
         for (int i = 0; i < images.length; i++) {
@@ -274,9 +287,9 @@ public class Processor extends AgentLifeCycleAdapter {
             outStream.reset();
         }
 
-        //composite into a gif
+        //composite into an animated webp image
         CommandLine cmdLine = new CommandLine(toolPath.getAbsolutePath());
-        cmdLine.addArguments("convert -quality 100 -delay 100 -loop 0");
+        cmdLine.addArguments("convert -quality 100 -define webp:lossless=true -delay 100 -loop 0");
         for (File image : images) {
             cmdLine.addArgument(image.getAbsolutePath());
         }
