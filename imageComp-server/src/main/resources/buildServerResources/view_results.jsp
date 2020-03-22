@@ -101,13 +101,17 @@
       <div class="icLabel" style="text-align: left;">
         <a id="img_comp_left_label_sxs" target="_blank"></a>
       </div>
-      <img class="icImage" id="img_comp_left_sxs">
+      <a>
+        <img class="icImage" id="img_comp_left_sxs">
+      </a>
     </div>
     <div style="width: 50%; border-left: 1px solid black;">
       <div class="icLabel" style="text-align: right;">
         <a id="img_comp_right_label_sxs" target="_blank"></a>
       </div>
-      <img class="icImage" id="img_comp_right_sxs">
+      <a>
+        <img class="icImage" id="img_comp_right_sxs">
+      </a>
     </div>
   </div>
 
@@ -140,28 +144,36 @@
       <div class="icLabel" style="text-align: left;">
         <a id="img_comp_left_label_diff" target="_blank"></a>
       </div>
-      <img class="icImage" id="img_comp_left_diff">
+      <a>
+        <img class="icImage" id="img_comp_left_diff">
+      </a>
     </div>
 
     <div style="width: 34%; border-right: 1px solid black;">
       <div class="icLabel" style="text-align: center;">
         <a id="img_comp_difference_image" target="_blank"></a>
       </div>
-      <img class="icImage" id="img_comp_difference">
+      <a>
+        <img class="icImage" id="img_comp_difference">
+      <a>
     </div>
 
     <div style="width: 33%; border-left: 1px solid black;">
       <div class="icLabel" style="text-align: right;">
         <a id="img_comp_right_label_diff" target="_blank"></a>
       </div>
-      <img class="icImage" id="img_comp_right_diff">
+      <a>
+        <img class="icImage" id="img_comp_right_diff">
+      </a>
     </div>
   </div>
   
   <%-- pre-generated animated gif of differences --%>
   <div id="statistics_images_gif" class="statistics_images" style="border: 2px solid black; display: none; height: min-content;">
     <div style="width: 100%; border-right: 1px solid black;">
-      <img class="icImage" id="img_comp_gif_diff">
+      <a>
+        <img class="icImage" id="img_comp_gif_diff">
+      </a>
     </div>
   </div>
 
@@ -432,6 +444,15 @@
                 if(compType == "slider" && BS.ImageCompResults.SliderInit == undefined) {
                   BS.ImageCompResults.SliderInit = true;
                   $j('.slider').slider();
+                }
+              }
+
+              var images = $('statistics_images_' + compType).getElementsByTagName("img");
+              for(var i = 0; i < images.length; i++) {
+                var parent = images[i].parentElement;
+                if(parent != undefined && parent.tagName == "A") {
+                  parent.href = images[i].src;
+                  parent.target="_blank";
                 }
               }
             }
