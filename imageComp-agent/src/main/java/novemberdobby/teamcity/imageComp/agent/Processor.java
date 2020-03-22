@@ -84,7 +84,7 @@ public class Processor extends AgentLifeCycleAdapter {
                 tempDir.mkdir();
 
                 if(referenceBuildID != -1) {
-                    log.message(String.format("Reference build ID is %s", referenceBuildID));
+                    log.message(String.format("Reference build is %s/viewLog.html?buildId=%s", serverUrl, referenceBuildID));
 
                     List<String> paths = Arrays.asList(pathsParam.split("[\n\r]"));
                     Map<String, File> storedItems = new HashMap<>();
