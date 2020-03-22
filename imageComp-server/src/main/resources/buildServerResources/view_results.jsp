@@ -140,7 +140,7 @@
   
   <%-- old image on left, pre-generated difference image in middle, new image on right --%>
   <div id="statistics_images_diff" class="statistics_images" style="border: 2px solid black; display: none; height: min-content;">
-    <div style="width: 33%; border-right: 1px solid black;">
+    <div style="width: 33.33%; border-right: 1px solid black;">
       <div class="icLabel" style="text-align: left;">
         <a id="img_comp_left_label_diff" target="_blank"></a>
       </div>
@@ -149,7 +149,7 @@
       </a>
     </div>
 
-    <div style="width: 34%; border-right: 1px solid black;">
+    <div style="width: 33.33%; border-right: 1px solid black;">
       <div class="icLabel" style="text-align: center;">
         <a id="img_comp_difference_image" target="_blank"></a>
       </div>
@@ -158,7 +158,7 @@
       <a>
     </div>
 
-    <div style="width: 33%; border-left: 1px solid black;">
+    <div style="width: 33.33%; border-left: 1px solid black;">
       <div class="icLabel" style="text-align: right;">
         <a id="img_comp_right_label_diff" target="_blank"></a>
       </div>
