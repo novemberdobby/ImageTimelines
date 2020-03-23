@@ -31,6 +31,10 @@
 }
 </style>
 
+<div id="statistics_empty" style="display: none;">
+  No statistics available.
+</div>
+
 <forms:saving id="getImgDataProgress"/>
 <div id="img_comp_options" style="display: none; border: 1px solid #868686; border-style: double; margin-bottom: 1em; margin-right: 0.5em; background: #e4e4e4;">
   <div style="padding: 0.25em; width: min-content; margin: 0.25em;">
@@ -235,29 +239,34 @@
         });
       }
 
-      //fill artifact dropdown
-      var ddArtifacts = $('img_comp_opt_artifact');
-      var oldArtifact = ddArtifacts.value;
-      if(BS.ImageCompResults.SetArtifact != undefined) {
-        oldArtifact = BS.ImageCompResults.SetArtifact;
-        BS.ImageCompResults.SetArtifact = undefined;
-      }
-
-      ddArtifacts.innerHTML = "";
-      for(var art in Artifacts) {
-        ddArtifacts.options.add(new Option(art, art))
-      }
-      var newArtifact = ddArtifacts.value;
-      ddArtifacts.value = oldArtifact;
-      if(ddArtifacts.value == "") {
-        ddArtifacts.value = newArtifact;
-      }
-
       BS.Util.hide('getImgDataProgress');
       BS.Util.hide('getImgDataProgressBuilds');
-      BS.Util.show('statistics_container');
-      $('img_comp_options').style.display = "flex";
-      BS.ImageCompResults.changeArtifact();
+
+      if(Object.keys(Artifacts).length == 0) {
+        BS.Util.show('statistics_empty');
+      } else {
+        //fill artifact dropdown
+        var ddArtifacts = $('img_comp_opt_artifact');
+        var oldArtifact = ddArtifacts.value;
+        if(BS.ImageCompResults.SetArtifact != undefined) {
+          oldArtifact = BS.ImageCompResults.SetArtifact;
+          BS.ImageCompResults.SetArtifact = undefined;
+        }
+
+        ddArtifacts.innerHTML = "";
+        for(var art in Artifacts) {
+          ddArtifacts.options.add(new Option(art, art))
+        }
+        var newArtifact = ddArtifacts.value;
+        ddArtifacts.value = oldArtifact;
+        if(ddArtifacts.value == "") {
+          ddArtifacts.value = newArtifact;
+        }
+
+        BS.Util.show('statistics_container');
+        $('img_comp_options').style.display = "flex";
+        BS.ImageCompResults.changeArtifact();
+      }
     },
 
     changeArtifact: function() {
