@@ -217,7 +217,7 @@
         const build = buildData.build[i];
         build.statistics.property.forEach(p => {
           //only get image comp stats
-          var match = p.name.match("ic_([\\w\\.]+)_([\\w\\.]+)"); //ic_<artifactname>_<metricname>
+          var match = p.name.match("ic_(.+)_([\\w]+)"); //ic_<artifactname>_<metricname>
           if(match != undefined) {
             var name = match[1];
             if(Artifacts[name] == undefined) {
@@ -360,7 +360,13 @@
       var targetMax = values.reduce((a, b) => Math.max(a, b));
 
       var lerp = function(a, b, c) { return a + (b - a) * c; }
-      var invLerp = function(a, b, c) { return (c - a) / (b - a); }
+      var invLerp = function(a, b, c) {
+        if(b - a == 0) {
+          return 0;
+        } else {
+          return (c - a) / (b - a);
+        }
+      }
       var colourLerp = function(a, b, c) { return "rgba(" + lerp(a[0], b[0], c) + "," + lerp(a[1], b[1], c) + "," + lerp(a[2], b[2], c) + "," + lerp(a[3], b[3], c) + ")" }
 
       BS.ImageCompResults.Chart.data.labels = target.map(d => d.number);

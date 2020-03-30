@@ -186,6 +186,7 @@ public class Processor extends AgentLifeCycleAdapter {
         //make a new folder to ensure we don't step on any inputs
         File diffImagesTemp = new File(build.getBuildTempDirectory(), "image_comp_diffs");
         diffImagesTemp.mkdir();
+        String publishToFolder = "";
         
         List<String> metrics = Util.getCompareMetrics(params);
         for (String metric : metrics) {
@@ -197,12 +198,25 @@ public class Processor extends AgentLifeCycleAdapter {
             File tempDiffImage = new File(diffImagesTemp, artPrefix + artifactNameDiff);
 
             //TODO: support tolerance aka -fuzz and make a note of what the value was (may as well record source build too if we're gonna do that)
+
+            //create folder for diff image
+            File tempParent = tempDiffImage.getParentFile();
+            if(!tempParent.exists()) {
+                tempParent.mkdirs();
+            }
+
             DiffResult diff = imageMagickDiff(magick, metric, referenceImage, newImage, tempDiffImage);
 
             if(diff.Success) {
                 log.message(String.format("Result for %s: %s", metric.toUpperCase(), diff.DifferenceAmount));
                 if(first) {
-                    log.message(String.format("##teamcity[publishArtifacts '%s => %s']", tempDiffImage.getAbsolutePath(), Constants.ARTIFACTS_RESULT_PATH));
+                    String baseFolder = diffImagesTemp.getAbsolutePath();
+                    String fullPath = tempParent.getAbsolutePath();
+                    if(fullPath.length() > baseFolder.length()) { //let's hope...
+                        publishToFolder = fullPath.substring(baseFolder.length());
+                    }
+
+                    log.message(String.format("##teamcity[publishArtifacts '%s => %s']", tempDiffImage.getAbsolutePath(), Constants.ARTIFACTS_RESULT_PATH + publishToFolder));
                 }
                 
                 log.message(String.format("##teamcity[buildStatisticValue key='ic_%s_%s' value='%.6f']", artifactName, metric, diff.DifferenceAmount));
@@ -224,7 +238,7 @@ public class Processor extends AgentLifeCycleAdapter {
             String[] annotations = new String[] { String.format("Baseline: #%s", build.getBuildNumber()), String.format("This build: #%s", referenceVersion) };
 
             if(imageMagickAnimate(magick, images, annotations, tempAnimatedImage)) {
-                log.message(String.format("##teamcity[publishArtifacts '%s => %s']", tempAnimatedImage.getAbsolutePath(), Constants.ARTIFACTS_RESULT_PATH));
+                log.message(String.format("##teamcity[publishArtifacts '%s => %s']", tempAnimatedImage.getAbsolutePath(), Constants.ARTIFACTS_RESULT_PATH + publishToFolder));
             } else {
                 log.error(String.format("Webp creation failed for %s", tempAnimatedImage.getAbsolutePath()));
             }
