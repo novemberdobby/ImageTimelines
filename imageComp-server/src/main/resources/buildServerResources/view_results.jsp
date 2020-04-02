@@ -482,7 +482,20 @@
     getResultFileName(artifact, suffix, forceExt) {
       var presentExt = artifact.split('.').pop();
       var extension = (forceExt != undefined) ? forceExt : presentExt;
-      return "${artifact_results_path}/" + artifact.substring(0, artifact.length - (presentExt.length + 1)) + suffix + "." + extension;
+      var result = "${artifact_results_path}/" + artifact.substring(0, artifact.length - (presentExt.length + 1)) + suffix + "." + extension;
+
+      //if it's pointing to an archive, then convert "image_comparisons/subfolder2/x.zip!/c_diff.png" to "image_comparisons/subfolder2/x_zip/c_diff.png"
+      var archiveSplit = result.indexOf("!/");
+      if(archiveSplit != -1) {
+        //find the archive extension
+        var archiveDot = result.lastIndexOf('.', archiveSplit);
+        if(archiveDot != -1) {
+          //change dot to underscore and remove "!"
+          result = result.substring(0, archiveDot) + "_" + result.substring(archiveDot + 1, archiveSplit) + result.substring(archiveSplit + 1);
+        }
+      }
+
+      return result;
     },
 
     keyDown(e) {

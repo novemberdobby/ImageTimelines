@@ -25,7 +25,6 @@ public class ScanFeature extends BuildFeature {
 
     private String m_jspPath;
     
-    //TODO: support archives
     //TODO: ant paths for multiple files? will need to validate in a util class
     //TODO: option to arbitrarily compare builds, requires comparison on the server (slow, need to restrict)
     //TODO: dedicated project tab that supports many build types too?

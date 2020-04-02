@@ -2,8 +2,6 @@ package novemberdobby.teamcity.imageComp.agent;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.net.URLConnection;
 import java.util.Arrays;
 import java.util.Collection;
@@ -16,11 +14,12 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathFactory;
 
+import com.intellij.openapi.util.Pair;
+
 import org.apache.commons.exec.CommandLine;
 import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.exec.ExecuteWatchdog;
 import org.apache.commons.exec.PumpStreamHandler;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.w3c.dom.Document;
 
@@ -48,7 +47,7 @@ public class Processor extends AgentLifeCycleAdapter {
     public void afterAtrifactsPublished(AgentRunningBuild build, BuildFinishedStatus status) {
         BuildProgressLogger log = build.getBuildLogger();
 
-        String blockMsg = String.format("Image Comparison: processing artifacts");
+        String blockMsg = "Image Comparison";
         log.activityStarted(blockMsg, "CUSTOM_IMAGE_COMP");
         
         Collection<AgentBuildFeature> features = build.getBuildFeaturesOfType(Constants.FEATURE_TYPE_ID);
@@ -56,9 +55,10 @@ public class Processor extends AgentLifeCycleAdapter {
             Map<String, String> params = feature.getParameters();
             String pathsParam = params.get(Constants.FEATURE_SETTING_ARTIFACTS);
 
-            //download artifacts from an earlier build to agent temp
-            Long referenceBuildID = -1L;
-            String referenceBuildNumber = "";
+            //TODO: retry all 3 server requests X times to handle downtime
+            //download artifacts from both builds to agent temp
+            Long refBuildID = -1L;
+            String refBuildNumber = "";
             if(pathsParam != null) {
                 String serverUrl = build.getAgentConfiguration().getServerUrl();
                 String buildIntId = build.getBuildTypeId(); //resist external ID changes
@@ -73,8 +73,8 @@ public class Processor extends AgentLifeCycleAdapter {
                 try {
                     Document buildsDoc = Util.getRESTdocument(infoUrl, build.getAccessUser(), build.getAccessCode());
                     XPath xpath = XPathFactory.newInstance().newXPath();
-                    referenceBuildID = Long.parseLong((String)xpath.evaluate("/builds/build/@id", buildsDoc, XPathConstants.STRING));
-                    referenceBuildNumber = (String)xpath.evaluate("/builds/build/@number", buildsDoc, XPathConstants.STRING);
+                    refBuildID = Long.parseLong((String)xpath.evaluate("/builds/build/@id", buildsDoc, XPathConstants.STRING));
+                    refBuildNumber = (String)xpath.evaluate("/builds/build/@number", buildsDoc, XPathConstants.STRING);
                 } catch (Exception e) {
                     log.error(e.toString());
                     log.error("This may mean that no suitable build is available to compare against");
@@ -83,79 +83,66 @@ public class Processor extends AgentLifeCycleAdapter {
                 File tempDir = new File(build.getBuildTempDirectory(), "image_comp_sources");
                 tempDir.mkdir();
 
-                if(referenceBuildID != -1) {
-                    log.message(String.format("Reference build is %s/viewLog.html?buildId=%s", serverUrl, referenceBuildID));
+                if(refBuildID != -1) {
+                    log.message(String.format("Reference build is %s/viewLog.html?buildId=%s", serverUrl, refBuildID));
 
                     List<String> paths = Arrays.asList(pathsParam.split("[\n\r]"));
-                    Map<String, File> storedItems = new HashMap<>();
+                    Map<String, Pair<File, File>> storedItems = new HashMap<>();
+
+                    String downloadBlockMsg = "Downloading images";
+                    log.activityStarted(downloadBlockMsg, "CUSTOM_IMAGE_COMP");
 
                     int idx = -1;
                     for (String artifact : paths) {
                         idx++;
                         String extension = FilenameUtils.getExtension(artifact);
                         if(extension == null || extension.length() == 0) {
-                            log.error(String.format("Missing extension for artifact: %s", artifact)); //we need this or the tools won't know what to do!
+                            log.error(String.format("Missing extension for artifact: %s", artifact)); //we need this or the tool won't know what to do!
                             continue;
                         }
 
-                        File target = new File(tempDir, String.format("%s.%s", idx, extension));
-                        log.message(String.format("Downloading %s to %s", artifact, target.getAbsolutePath()));
+                        String tempFormat = String.format("%s.%s", idx, extension);
+                        File refTarget = new File(tempDir, "ref_" + tempFormat);
+                        File newTarget = new File(tempDir, "new_" + tempFormat);
 
                         //note: this creates an artifact dependency, the server matches our credentials with the source build to create the link
-                        String downloadUrl = String.format("%s/httpAuth/app/rest/builds/%s/artifacts/content/%s", serverUrl, referenceBuildID, artifact);
+                        String refDownloadUrl = String.format("%s/httpAuth/app/rest/builds/%s/artifacts/content/%s", serverUrl, refBuildID, artifact);
+                        String newDownloadUrl = String.format("%s/httpAuth/app/rest/builds/%s/artifacts/content/%s", serverUrl, build.getBuildId(), artifact);
+
+                        log.message(String.format("%s to %s", refDownloadUrl, refTarget.getAbsolutePath()));
+                        log.message(String.format("%s to %s", newDownloadUrl, newTarget.getAbsolutePath()));
+
                         try {
-                            URLConnection connection = Util.webRequest(downloadUrl, build.getAccessUser(), build.getAccessCode());
-                            Util.downloadFile(connection, target);
+                            URLConnection refConn = Util.webRequest(refDownloadUrl, build.getAccessUser(), build.getAccessCode());
+                            Util.downloadFile(refConn, refTarget);
+                            
+                            URLConnection newConn = Util.webRequest(newDownloadUrl, build.getAccessUser(), build.getAccessCode());
+                            Util.downloadFile(newConn, newTarget);
                         } catch (Exception e) {
                             log.error("Download failed:");
                             log.error(e.toString());
                             continue;
                         }
 
-                        storedItems.put(artifact, target);
+                        storedItems.put(artifact, new Pair<>(refTarget, newTarget));
                     }
 
+                    log.activityFinished(downloadBlockMsg, "CUSTOM_IMAGE_COMP");
+
+                    //TODO: resulting image publishes going to mapped output *with subdirs* e.g. /image_comparisons/subfolder/screenies.zip!cameraB_diff.png, including subdirs in archives
+                    
                     //now we've got as many as we can, iterate and do the comparisons
-                    //first get the files we just published as artifacts. find them in the local artifact cache - if that fails, redownload from server (we can't find out their pre-publish workspace paths)
-                    File cache = build.getAgentConfiguration().getCacheDirectory(".artifacts_cache");
-                    URL serverUrlObj = null;
-                    try {
-                        serverUrlObj = new URL(serverUrl);
-                    } catch (MalformedURLException e) {
-                        log.error("Failed to create URL object from server url (this really shouldn't happen)");
-                        return;
-                    }
-                    
-                    //e.g. C:\TeamCity\buildAgent\system\.artifacts_cache\localhost_80\httpAuth\repository\download\ConfigA\6466.tcbuildid
-                    File buildCachePath = new File(String.format("%s\\%s_%s\\httpAuth\\repository\\download\\%s\\%s.tcbuildid",
-                        cache, serverUrlObj.getHost(), serverUrlObj.getPort(), build.getBuildTypeExternalId(), build.getBuildId()));
-                    
-                    if(!buildCachePath.exists()) {
-                        log.error(String.format("Couldn't find cache path: %s", buildCachePath.getAbsolutePath())); //TODO: warning & fall back to server download
-                        return;
-                    }
-                    
-                    log.message(String.format("Found artifacts cache: %s", buildCachePath.getAbsolutePath()));
-                    for (Entry<String, File> stored : storedItems.entrySet()) {
-                        File cachedFile = new File(buildCachePath, stored.getKey());
-                        if(cachedFile.exists()) {
-                            //we can potentially modify images in the cache, so copy them elsewhere first (preserve ext for magick)
-                            File tempCacheCopy = new File(tempDir, String.format("_cache_temp.%s", FilenameUtils.getExtension(cachedFile.getAbsolutePath())));
-                            try {
-                                FileUtils.copyFile(cachedFile, tempCacheCopy, false);
-                            } catch (Exception e) {
-                                log.error(String.format("Couldn't create temp file from cache item: %s (%s)", cachedFile.getAbsolutePath(), tempCacheCopy.getAbsolutePath()));
-                                continue;
-                            }
+                    for (Entry<String, Pair<File, File>> stored : storedItems.entrySet()) {
 
-                            compare(build, params, stored.getKey(), stored.getValue(), referenceBuildNumber, tempCacheCopy);
+                        String artifactName = stored.getKey();
+                        File refImage = stored.getValue().first;
+                        File newImage = stored.getValue().second;
 
-                            if(build.getInterruptReason() != null) {
-                                log.warning("Stopping comparisons due to interrupted build");
-                                break;
-                            }
-                        } else {
-                            log.error(String.format("Couldn't find file in cache: %s", cachedFile.getAbsolutePath()));
+                        compare(build, params, artifactName, refImage, refBuildNumber, newImage);
+
+                        if(build.getInterruptReason() != null) {
+                            log.warning("Stopping comparisons due to interrupted build");
+                            break;
                         }
                     }
 
@@ -180,6 +167,9 @@ public class Processor extends AgentLifeCycleAdapter {
         if(!resolveResult.isFullyResolved()) {
             return false;
         }
+        
+        String blockMsg = String.format("Comparing '%s'", artifactName);
+        log.activityStarted(blockMsg, "CUSTOM_IMAGE_COMP");
 
         File magick = new File(resolveResult.getResult(), "magick.exe");
 
@@ -197,7 +187,8 @@ public class Processor extends AgentLifeCycleAdapter {
             String artifactNameDiff = String.format("%s_diff.%s", FilenameUtils.removeExtension(artifactName), FilenameUtils.getExtension(artifactName));
             File tempDiffImage = new File(diffImagesTemp, artPrefix + artifactNameDiff);
 
-            //TODO: support tolerance aka -fuzz and make a note of what the value was (may as well record source build too if we're gonna do that)
+            //TODO: support tolerance aka -fuzz and make a note of what the value was (may as well record source build too if we're gonna do that, then remove ajax rq or use as a fallback)
+            //TODO: may as well publish another file to artifacts with info, can we use the same file for all this stuff? would need repeated publishes (risky)
 
             //create folder for diff image
             File tempParent = tempDiffImage.getParentFile();
@@ -208,17 +199,24 @@ public class Processor extends AgentLifeCycleAdapter {
             DiffResult diff = imageMagickDiff(magick, metric, referenceImage, newImage, tempDiffImage);
 
             if(diff.Success) {
-                log.message(String.format("Result for %s: %s", metric.toUpperCase(), diff.DifferenceAmount));
                 if(first) {
                     String baseFolder = diffImagesTemp.getAbsolutePath();
                     String fullPath = tempParent.getAbsolutePath();
                     if(fullPath.length() > baseFolder.length()) { //let's hope...
                         publishToFolder = fullPath.substring(baseFolder.length());
+
+                        //if it's an archive, change the outputs so they go to a folder instead. this is a workaround
+                        //for repeated publishes to the same output archive recreating that archive every publish
+                        if(publishToFolder.endsWith("!")) {
+                            publishToFolder = publishToFolder.substring(0, publishToFolder.length() - 1);
+                            publishToFolder = String.format("%s_%s", FilenameUtils.removeExtension(publishToFolder), FilenameUtils.getExtension(publishToFolder));
+                        }
                     }
 
                     log.message(String.format("##teamcity[publishArtifacts '%s => %s']", tempDiffImage.getAbsolutePath(), Constants.ARTIFACTS_RESULT_PATH + publishToFolder));
                 }
                 
+                log.message(String.format("%s: %s", metric.toUpperCase(), diff.DifferenceAmount));
                 log.message(String.format("##teamcity[buildStatisticValue key='ic_%s_%s' value='%.6f']", artifactName, metric, diff.DifferenceAmount));
 
             } else {
@@ -226,6 +224,7 @@ public class Processor extends AgentLifeCycleAdapter {
             }
 
             if(build.getInterruptReason() != null) {
+                log.activityFinished(blockMsg, "CUSTOM_IMAGE_COMP");
                 return false;
             }
         }
@@ -243,11 +242,13 @@ public class Processor extends AgentLifeCycleAdapter {
                 log.error(String.format("Webp creation failed for %s", tempAnimatedImage.getAbsolutePath()));
             }
         }
+        
+        log.activityFinished(blockMsg, "CUSTOM_IMAGE_COMP");
 
-        //TODO: unlikely to work well with similarly named files in different places in artifacts, support mirroring folder structure
         //TODO: meaningful return
         return true;
         //TODO: non-windows agent support
+        //TODO: add prepackaged ImageMagick
     }
 
     DiffResult imageMagickDiff(File toolPath, String metric, File referenceImage, File newImage, File createDifferenceImage) {
