@@ -9,6 +9,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
@@ -200,6 +202,7 @@ public class Processor extends AgentLifeCycleAdapter {
 
             if(diff.Success) {
                 if(first) {
+                    //remove storage prefix to get destination 
                     String baseFolder = diffImagesTemp.getAbsolutePath();
                     String fullPath = tempParent.getAbsolutePath();
                     if(fullPath.length() > baseFolder.length()) { //let's hope...
@@ -207,9 +210,17 @@ public class Processor extends AgentLifeCycleAdapter {
 
                         //if it's an archive, change the outputs so they go to a folder instead. this is a workaround
                         //for repeated publishes to the same output archive recreating that archive every publish
-                        if(publishToFolder.endsWith("!")) {
-                            publishToFolder = publishToFolder.substring(0, publishToFolder.length() - 1);
-                            publishToFolder = String.format("%s_%s", FilenameUtils.removeExtension(publishToFolder), FilenameUtils.getExtension(publishToFolder));
+                        Pattern archivePtn = Pattern.compile("(!$|!\\\\)"); //must end with ! or contain !\
+                        Matcher mtch = archivePtn.matcher(publishToFolder);
+                        if(mtch.find()) {
+                            //remove '!'
+                            publishToFolder = publishToFolder.substring(0, mtch.start()) + publishToFolder.substring(mtch.start() + 1);
+
+                            //swap '.' for '_'
+                            int archiveDot = publishToFolder.lastIndexOf(".", mtch.start());
+                            if(archiveDot != -1) {
+                                publishToFolder = publishToFolder.substring(0, archiveDot) + "_" + publishToFolder.substring(archiveDot + 1);
+                            }
                         }
                     }
 
