@@ -167,6 +167,7 @@ public class Processor extends AgentLifeCycleAdapter {
         ValueResolver resolvedParams = build.getSharedParametersResolver();
         ProcessingResult resolveResult = resolvedParams.resolve("%" + Constants.TOOL_IM_PATH_PARAM + "%");
         if(!resolveResult.isFullyResolved()) {
+            log.error("Couldn't find agent tool for comparison: " + resolveResult.getResult());
             return false;
         }
         
@@ -255,8 +256,6 @@ public class Processor extends AgentLifeCycleAdapter {
         }
         
         log.activityFinished(blockMsg, "CUSTOM_IMAGE_COMP");
-
-        //TODO: meaningful return
         return true;
         //TODO: non-windows agent support
         //TODO: add prepackaged ImageMagick
