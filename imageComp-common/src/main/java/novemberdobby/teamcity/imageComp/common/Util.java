@@ -61,4 +61,14 @@ public class Util {
 
         return Collections.emptyList();
     }
+
+	public static String EscapeServiceMessageText(String input) {
+        return input
+        .replace("|", "||")
+        .replace("\r", "|r")
+        .replace("\n", "|n")
+        .replace("'", "|'")
+        .replace("[", "|[")
+        .replace("]", "|]");
+	}
 }

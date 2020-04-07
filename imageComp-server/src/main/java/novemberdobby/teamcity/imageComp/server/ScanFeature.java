@@ -25,7 +25,6 @@ public class ScanFeature extends BuildFeature {
 
     private String m_jspPath;
     
-    //TODO: ant paths for multiple files? will need to validate in a util class
     //TODO: option to arbitrarily compare builds, requires comparison on the server (slow, need to restrict)
     //TODO: dedicated project tab that supports many build types too?
     
@@ -84,17 +83,14 @@ public class ScanFeature extends BuildFeature {
         result.put(Constants.FEATURE_SETTING_ARTIFACTS, "");
         result.put(Constants.FEATURE_SETTING_DIFF_METRIC, Constants.FEATURE_SETTING_DIFF_METRIC_DEFAULT);
         result.put(Constants.FEATURE_SETTING_GENERATE_ANIMATED, "true");
+        result.put(Constants.FEATURE_SETTING_FAIL_ON_ERROR, "false");
         return result;
     }
 
     @Override
     public Collection<Requirement> getRequirements(Map<String, String> params) {
-        //TODO: instructions for IM tool install in readme https://imagemagick.org/download/binaries/ImageMagick-7.0.9-27-portable-Q16-x64.zip
         List<Requirement> reqs = new ArrayList<>();
         reqs.add(new Requirement("image_conversion_tool", Constants.TOOL_IM_PATH_PARAM, null, RequirementType.EXISTS));
-
-        //cheeky hack until non-windows agents are supported
-        reqs.add(new Requirement("image_conversion_tool_platform", "env.ProgramFiles", null, RequirementType.EXISTS));
         return reqs;
     }
     

@@ -11,6 +11,7 @@
 <c:set var="diff_type_default" value="<%=Constants.FEATURE_SETTING_DIFF_METRIC_DEFAULT%>"/>
 <c:set var="hidden_agent_req_im" value="<%=Constants.FEATURE_SETTING_HIDDEN_REQ_IM%>"/>
 <c:set var="generate_animated" value="<%=Constants.FEATURE_SETTING_GENERATE_ANIMATED%>"/>
+<c:set var="fail_on_problem" value="<%=Constants.FEATURE_SETTING_FAIL_ON_ERROR%>"/>
 <c:set var="artifact_popup_url" value="<%=Constants.FEATURE_ARTIFACTS_POPUP_URL%>"/>
 
 <c:set var="hidden_agent_req_im_value" value="<%=Constants.TOOL_IM_PATH_PARAM%>"/>
@@ -98,6 +99,14 @@
   <td>
     <props:checkboxProperty name="${generate_animated}" value="true"/>
     <label for="${generate_animated}">Generate animated image of differences</label>
+  </td>
+</tr>
+
+<tr class="advancedSetting">
+  <th>Fail build on error:</th>
+  <td>
+    <props:checkboxProperty name="${fail_on_problem}" />
+    <label for="${fail_on_problem}">Add a build problem when any comparisons fail</label>
   </td>
 </tr>
 

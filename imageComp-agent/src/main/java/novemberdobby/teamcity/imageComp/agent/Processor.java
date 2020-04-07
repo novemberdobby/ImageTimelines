@@ -25,10 +25,12 @@ import org.apache.commons.exec.PumpStreamHandler;
 import org.apache.commons.io.FilenameUtils;
 import org.w3c.dom.Document;
 
+import jetbrains.buildServer.BuildProblemData;
 import jetbrains.buildServer.agent.AgentBuildFeature;
 import jetbrains.buildServer.agent.AgentLifeCycleAdapter;
 import jetbrains.buildServer.agent.AgentLifeCycleListener;
 import jetbrains.buildServer.agent.AgentRunningBuild;
+import jetbrains.buildServer.agent.BuildAgentSystemInfo;
 import jetbrains.buildServer.agent.BuildFinishedStatus;
 import jetbrains.buildServer.agent.BuildProgressLogger;
 import jetbrains.buildServer.parameters.ProcessingResult;
@@ -52,113 +54,128 @@ public class Processor extends AgentLifeCycleAdapter {
         String blockMsg = "Image Comparison";
         log.activityStarted(blockMsg, "CUSTOM_IMAGE_COMP");
         
-        Collection<AgentBuildFeature> features = build.getBuildFeaturesOfType(Constants.FEATURE_TYPE_ID);
-        for (AgentBuildFeature feature : features) {
-            Map<String, String> params = feature.getParameters();
-            String pathsParam = params.get(Constants.FEATURE_SETTING_ARTIFACTS);
+        try {
+            Collection<AgentBuildFeature> features = build.getBuildFeaturesOfType(Constants.FEATURE_TYPE_ID);
+            for (AgentBuildFeature feature : features) {
+                Map<String, String> params = feature.getParameters();
+                String pathsParam = params.get(Constants.FEATURE_SETTING_ARTIFACTS);
+                boolean problemOnError = "true".equals(params.get(Constants.FEATURE_SETTING_FAIL_ON_ERROR));
 
-            //TODO: retry all 3 server requests X times to handle downtime
-            //download artifacts from both builds to agent temp
-            Long refBuildID = -1L;
-            String refBuildNumber = "";
-            if(pathsParam != null) {
-                String serverUrl = build.getAgentConfiguration().getServerUrl();
-                String buildIntId = build.getBuildTypeId(); //resist external ID changes
-                String restrict = "";
+                //TODO: retry all 3 server requests X times to handle downtime
+                //download artifacts from both builds to agent temp
+                Long refBuildID = -1L;
+                String refBuildNumber = "";
+                if(pathsParam != null) {
+                    String serverUrl = build.getAgentConfiguration().getServerUrl();
+                    String buildIntId = build.getBuildTypeId(); //resist external ID changes
+                    String restrict = "";
 
-                if("tagged".equals(params.get(Constants.FEATURE_SETTING_COMPARE_TYPE))) {
-                    restrict = String.format(",tag:%s", params.get(Constants.FEATURE_SETTING_TAG));
-                }
+                    if("tagged".equals(params.get(Constants.FEATURE_SETTING_COMPARE_TYPE))) {
+                        restrict = String.format(",tag:%s", params.get(Constants.FEATURE_SETTING_TAG));
+                    }
 
-                String infoUrl = String.format("%s/httpAuth/app/rest/builds?locator=buildType(internalId:%s),count:1%s", serverUrl, buildIntId, restrict);
-                
-                try {
-                    Document buildsDoc = Util.getRESTdocument(infoUrl, build.getAccessUser(), build.getAccessCode());
-                    XPath xpath = XPathFactory.newInstance().newXPath();
-                    refBuildID = Long.parseLong((String)xpath.evaluate("/builds/build/@id", buildsDoc, XPathConstants.STRING));
-                    refBuildNumber = (String)xpath.evaluate("/builds/build/@number", buildsDoc, XPathConstants.STRING);
-                } catch (Exception e) {
-                    log.error(e.toString());
-                    log.error("This may mean that no suitable build is available to compare against");
-                }
-                
-                File tempDir = new File(build.getBuildTempDirectory(), "image_comp_sources");
-                tempDir.mkdir();
+                    String infoUrl = String.format("%s/httpAuth/app/rest/builds?locator=buildType(internalId:%s),count:1%s", serverUrl, buildIntId, restrict);
+                    
+                    try {
+                        Document buildsDoc = Util.getRESTdocument(infoUrl, build.getAccessUser(), build.getAccessCode());
+                        XPath xpath = XPathFactory.newInstance().newXPath();
+                        refBuildID = Long.parseLong((String)xpath.evaluate("/builds/build/@id", buildsDoc, XPathConstants.STRING));
+                        refBuildNumber = (String)xpath.evaluate("/builds/build/@number", buildsDoc, XPathConstants.STRING);
+                    } catch (Throwable e) {
+                        logError(log, problemOnError, "Couldn't find a suitable build to compare images against");
+                        log.error(e.toString());
+                    }
+                    
+                    File tempDir = new File(build.getBuildTempDirectory(), "image_comp_sources");
+                    tempDir.mkdir();
 
-                if(refBuildID != -1) {
-                    log.message(String.format("Reference build is %s/viewLog.html?buildId=%s", serverUrl, refBuildID));
+                    if(refBuildID != -1) {
+                        log.message(String.format("Reference build is %s/viewLog.html?buildId=%s", serverUrl, refBuildID));
 
-                    List<String> paths = Arrays.asList(pathsParam.split("[\n\r]"));
-                    Map<String, Pair<File, File>> storedItems = new HashMap<>();
+                        List<String> paths = Arrays.asList(pathsParam.split("[\n\r]"));
+                        Map<String, Pair<File, File>> storedItems = new HashMap<>();
 
-                    String downloadBlockMsg = "Downloading images";
-                    log.activityStarted(downloadBlockMsg, "CUSTOM_IMAGE_COMP");
-
-                    int idx = -1;
-                    for (String artifact : paths) {
-                        idx++;
-                        String extension = FilenameUtils.getExtension(artifact);
-                        if(extension == null || extension.length() == 0) {
-                            log.error(String.format("Missing extension for artifact: %s", artifact)); //we need this or the tool won't know what to do!
-                            continue;
-                        }
-
-                        String tempFormat = String.format("%s.%s", idx, extension);
-                        File refTarget = new File(tempDir, "ref_" + tempFormat);
-                        File newTarget = new File(tempDir, "new_" + tempFormat);
-
-                        //note: this creates an artifact dependency, the server matches our credentials with the source build to create the link
-                        String refDownloadUrl = String.format("%s/httpAuth/app/rest/builds/%s/artifacts/content/%s", serverUrl, refBuildID, artifact);
-                        String newDownloadUrl = String.format("%s/httpAuth/app/rest/builds/%s/artifacts/content/%s", serverUrl, build.getBuildId(), artifact);
-
-                        log.message(String.format("%s to %s", refDownloadUrl, refTarget.getAbsolutePath()));
-                        log.message(String.format("%s to %s", newDownloadUrl, newTarget.getAbsolutePath()));
+                        String downloadBlockMsg = "Downloading images";
+                        log.activityStarted(downloadBlockMsg, "CUSTOM_IMAGE_COMP");
 
                         try {
-                            URLConnection refConn = Util.webRequest(refDownloadUrl, build.getAccessUser(), build.getAccessCode());
-                            Util.downloadFile(refConn, refTarget);
-                            
-                            URLConnection newConn = Util.webRequest(newDownloadUrl, build.getAccessUser(), build.getAccessCode());
-                            Util.downloadFile(newConn, newTarget);
-                        } catch (Exception e) {
-                            log.error("Download failed:");
-                            log.error(e.toString());
-                            continue;
+                            int idx = -1;
+                            for (String artifact : paths) {
+                                idx++;
+                                String extension = FilenameUtils.getExtension(artifact);
+                                if(extension == null || extension.length() == 0) {
+                                    logError(log, problemOnError, String.format("Missing extension for image artifact: %s", artifact)); //we need this or the tool won't know what to do!
+                                    continue;
+                                }
+
+                                String tempFormat = String.format("%s.%s", idx, extension);
+                                File refTarget = new File(tempDir, "ref_" + tempFormat);
+                                File newTarget = new File(tempDir, "new_" + tempFormat);
+
+                                //note: this creates an artifact dependency, the server matches our credentials with the source build to create the link
+                                String refDownloadUrl = String.format("%s/httpAuth/app/rest/builds/%s/artifacts/content/%s", serverUrl, refBuildID, artifact);
+                                String newDownloadUrl = String.format("%s/httpAuth/app/rest/builds/%s/artifacts/content/%s", serverUrl, build.getBuildId(), artifact);
+
+                                log.message(String.format("%s to %s", refDownloadUrl, refTarget.getAbsolutePath()));
+                                log.message(String.format("%s to %s", newDownloadUrl, newTarget.getAbsolutePath()));
+
+                                try {
+                                    URLConnection refConn = Util.webRequest(refDownloadUrl, build.getAccessUser(), build.getAccessCode());
+                                    Util.downloadFile(refConn, refTarget);
+                                    
+                                    URLConnection newConn = Util.webRequest(newDownloadUrl, build.getAccessUser(), build.getAccessCode());
+                                    Util.downloadFile(newConn, newTarget);
+                                } catch (Throwable e) {
+                                    logError(log, problemOnError, "Image artifact download failed");
+                                    log.error(e.toString());
+                                    continue;
+                                }
+
+                                storedItems.put(artifact, new Pair<>(refTarget, newTarget));
+                            }
+                                
+                        } finally {
+                            log.activityFinished(downloadBlockMsg, "CUSTOM_IMAGE_COMP");
                         }
 
-                        storedItems.put(artifact, new Pair<>(refTarget, newTarget));
-                    }
+                        //now we've got as many as we can, iterate and do the comparisons
+                        for (Entry<String, Pair<File, File>> stored : storedItems.entrySet()) {
 
-                    log.activityFinished(downloadBlockMsg, "CUSTOM_IMAGE_COMP");
+                            String artifactName = stored.getKey();
+                            File refImage = stored.getValue().first;
+                            File newImage = stored.getValue().second;
 
-                    //TODO: resulting image publishes going to mapped output *with subdirs* e.g. /image_comparisons/subfolder/screenies.zip!cameraB_diff.png, including subdirs in archives
-                    
-                    //now we've got as many as we can, iterate and do the comparisons
-                    for (Entry<String, Pair<File, File>> stored : storedItems.entrySet()) {
+                            if(!compare(build, params, artifactName, refImage, refBuildNumber, newImage)) {
+                                logError(log, problemOnError, "Image comparison failed for " + artifactName);
+                            }
 
-                        String artifactName = stored.getKey();
-                        File refImage = stored.getValue().first;
-                        File newImage = stored.getValue().second;
-
-                        compare(build, params, artifactName, refImage, refBuildNumber, newImage);
-
-                        if(build.getInterruptReason() != null) {
-                            log.warning("Stopping comparisons due to interrupted build");
-                            break;
+                            if(build.getInterruptReason() != null) {
+                                log.warning("Stopping comparisons due to interrupted build");
+                                break;
+                            }
                         }
-                    }
 
-                } else {
-                    log.error("Skipping downloads due to errors");
+                    } else {
+                        log.error("Skipping downloads due to errors");
+                    }
+                }
+
+                if(build.getInterruptReason() != null) {
+                    break;
                 }
             }
-
-            if(build.getInterruptReason() != null) {
-                break;
-            }
+        } finally {
+            log.activityFinished(blockMsg, "CUSTOM_IMAGE_COMP");
         }
+    }
 
-        log.activityFinished(blockMsg, "CUSTOM_IMAGE_COMP");
+    void logError(BuildProgressLogger log, boolean problemOnError, String error) {
+        if(problemOnError) {
+            BuildProblemData buildProblem = BuildProblemData.createBuildProblem(error, BuildProblemData.TC_USER_PROVIDED_TYPE, error);
+            log.logBuildProblem(buildProblem);
+        } else {
+            log.error(error);
+        }
     }
 
     boolean compare(AgentRunningBuild build, Map<String, String> params, String artifactName, File referenceImage, String referenceVersion, File newImage) {
@@ -174,91 +191,113 @@ public class Processor extends AgentLifeCycleAdapter {
         String blockMsg = String.format("Comparing '%s'", artifactName);
         log.activityStarted(blockMsg, "CUSTOM_IMAGE_COMP");
 
-        File magick = new File(resolveResult.getResult(), "magick.exe");
-
-        //make a new folder to ensure we don't step on any inputs
-        File diffImagesTemp = new File(build.getBuildTempDirectory(), "image_comp_diffs");
-        diffImagesTemp.mkdir();
-        String publishToFolder = "";
-        
-        List<String> metrics = Util.getCompareMetrics(params);
-        for (String metric : metrics) {
-            //each time we invoke compare, we *have* to produce a diff image. these are identical regardless of which metric is used.
-            //publish the first as an artifact, and give the rest another name so publishing doesn't break when the image is overwritten
-            boolean first = metric == metrics.get(0);
-            String artPrefix = first ? "" : "_";
-            String artifactNameDiff = String.format("%s_diff.%s", FilenameUtils.removeExtension(artifactName), FilenameUtils.getExtension(artifactName));
-            File tempDiffImage = new File(diffImagesTemp, artPrefix + artifactNameDiff);
-
-            //TODO: support tolerance aka -fuzz and make a note of what the value was (may as well record source build too if we're gonna do that, then remove ajax rq or use as a fallback)
-            //TODO: may as well publish another file to artifacts with info, can we use the same file for all this stuff? would need repeated publishes (risky)
-
-            //create folder for diff image
-            File tempParent = tempDiffImage.getParentFile();
-            if(!tempParent.exists()) {
-                tempParent.mkdirs();
+        try {
+            File magick = null;
+            BuildAgentSystemInfo agentInfo = build.getAgentConfiguration().getSystemInfo();
+            if(agentInfo.isWindows()) {
+                magick = new File(resolveResult.getResult(), "windows\\magick.exe");
             }
-
-            DiffResult diff = imageMagickDiff(magick, metric, referenceImage, newImage, tempDiffImage);
-
-            if(diff.Success) {
-                if(first) {
-                    //remove storage prefix to get destination 
-                    String baseFolder = diffImagesTemp.getAbsolutePath();
-                    String fullPath = tempParent.getAbsolutePath();
-                    if(fullPath.length() > baseFolder.length()) { //let's hope...
-                        publishToFolder = fullPath.substring(baseFolder.length());
-
-                        //if it's an archive, change the outputs so they go to a folder instead. this is a workaround
-                        //for repeated publishes to the same output archive recreating that archive every publish
-                        Pattern archivePtn = Pattern.compile("(!$|!\\\\)"); //must end with ! or contain !\
-                        Matcher mtch = archivePtn.matcher(publishToFolder);
-                        if(mtch.find()) {
-                            //remove '!'
-                            publishToFolder = publishToFolder.substring(0, mtch.start()) + publishToFolder.substring(mtch.start() + 1);
-
-                            //swap '.' for '_'
-                            int archiveDot = publishToFolder.lastIndexOf(".", mtch.start());
-                            if(archiveDot != -1) {
-                                publishToFolder = publishToFolder.substring(0, archiveDot) + "_" + publishToFolder.substring(archiveDot + 1);
-                            }
-                        }
-                    }
-
-                    log.message(String.format("##teamcity[publishArtifacts '%s => %s']", tempDiffImage.getAbsolutePath(), Constants.ARTIFACTS_RESULT_PATH + publishToFolder));
-                }
-                
-                log.message(String.format("%s: %s", metric.toUpperCase(), diff.DifferenceAmount));
-                log.message(String.format("##teamcity[buildStatisticValue key='ic_%s_%s' value='%.6f']", artifactName, metric, diff.DifferenceAmount));
-
-            } else {
-                log.error(String.format("Result for %s: %s", metric.toUpperCase(), diff.StandardOut));
+            else if(agentInfo.isUnix()) {
+                magick = new File(resolveResult.getResult(), "unix/magick");
             }
-
-            if(build.getInterruptReason() != null) {
-                log.activityFinished(blockMsg, "CUSTOM_IMAGE_COMP");
+            else {
+                log.error("Unsupported OS");
                 return false;
             }
-        }
 
-        if("true".equals(params.get(Constants.FEATURE_SETTING_GENERATE_ANIMATED))) {
-            String artifactNameAnimated = String.format("%s_animated.webp", FilenameUtils.removeExtension(artifactName));
-            File tempAnimatedImage = new File(diffImagesTemp, artifactNameAnimated);
+            //make a new folder to ensure we don't step on any inputs
+            File diffImagesTemp = new File(build.getBuildTempDirectory(), "image_comp_diffs");
+            diffImagesTemp.mkdir();
+            String publishToFolder = "";
+            
+            List<String> metrics = Util.getCompareMetrics(params);
+            for (String metric : metrics) {
+                //each time we invoke compare, we *have* to produce a diff image. these are identical regardless of which metric is used.
+                //publish the first as an artifact, and give the rest another name so publishing doesn't break when the image is overwritten
+                boolean first = metric == metrics.get(0);
+                String artPrefix = first ? "" : "_";
+                String artifactNameDiff = String.format("%s_diff.%s", FilenameUtils.removeExtension(artifactName), FilenameUtils.getExtension(artifactName));
 
-            File[] images = new File[] { referenceImage, newImage };
-            String[] annotations = new String[] { String.format("Baseline: #%s", build.getBuildNumber()), String.format("This build: #%s", referenceVersion) };
+                //don't try to write paths with ! in
+                File tempDiffImage = removeArchive(new File(diffImagesTemp, artPrefix + artifactNameDiff));
 
-            if(imageMagickAnimate(magick, images, annotations, tempAnimatedImage)) {
-                log.message(String.format("##teamcity[publishArtifacts '%s => %s']", tempAnimatedImage.getAbsolutePath(), Constants.ARTIFACTS_RESULT_PATH + publishToFolder));
-            } else {
-                log.error(String.format("Webp creation failed for %s", tempAnimatedImage.getAbsolutePath()));
+                //TODO: diff images are coming out with non-255 alpha
+                //TODO: support tolerance aka -fuzz and make a note of what the value was (may as well record source build too if we're gonna do that, then remove ajax rq or use as a fallback)
+                //TODO: may as well publish another file to artifacts with info, can we use the same file for all this stuff? would need repeated publishes (risky)
+
+                //create folder for diff image
+                File tempParent = tempDiffImage.getParentFile();
+                if(!tempParent.exists()) {
+                    tempParent.mkdirs();
+                }
+
+                DiffResult diff = imageMagickDiff(magick, metric, referenceImage, newImage, tempDiffImage);
+
+                if(diff.Success) {
+                    if(first) {
+                        //remove temp storage prefix to get destination
+                        String baseFolder = diffImagesTemp.getAbsolutePath();
+                        String fullPath = tempParent.getAbsolutePath();
+                        if(fullPath.length() > baseFolder.length()) { //let's hope...
+                            publishToFolder = fullPath.substring(baseFolder.length());
+                        }
+
+                        log.message(String.format("##teamcity[publishArtifacts '%s => %s']", tempDiffImage.getAbsolutePath(), Constants.ARTIFACTS_RESULT_PATH + publishToFolder));
+                    }
+                    
+                    log.message(String.format("%s: %s", metric.toUpperCase(), diff.DifferenceAmount));
+                    log.message(String.format("##teamcity[buildStatisticValue key='ic_%s_%s' value='%.6f']", artifactName, metric, diff.DifferenceAmount));
+
+                } else {
+                    log.error(String.format("Result for %s: %s", metric.toUpperCase(), diff.StandardOut));
+                }
+
+                if(build.getInterruptReason() != null) {
+                    return false;
+                }
             }
+
+            if("true".equals(params.get(Constants.FEATURE_SETTING_GENERATE_ANIMATED))) {
+                String artifactNameAnimated = String.format("%s_animated.webp", FilenameUtils.removeExtension(artifactName));
+                File tempAnimatedImage = removeArchive(new File(diffImagesTemp, artifactNameAnimated));
+
+                File[] images = new File[] { referenceImage, newImage };
+                String[] annotations = new String[] { String.format("Baseline: #%s", build.getBuildNumber()), String.format("This build: #%s", referenceVersion) };
+
+                if(imageMagickAnimate(magick, images, annotations, tempAnimatedImage)) {
+                    log.message(String.format("##teamcity[publishArtifacts '%s => %s']", tempAnimatedImage.getAbsolutePath(), Constants.ARTIFACTS_RESULT_PATH + publishToFolder));
+                } else {
+                    log.error(String.format("Webp creation failed for %s", tempAnimatedImage.getAbsolutePath()));
+                }
+            }
+        } finally {
+            log.activityFinished(blockMsg, "CUSTOM_IMAGE_COMP");
         }
-        
-        log.activityFinished(blockMsg, "CUSTOM_IMAGE_COMP");
+
         return true;
         //TODO: non-windows agent support
-        //TODO: add prepackaged ImageMagick
+    }
+
+    File removeArchive(File inputFile) {
+
+        String input = inputFile.getAbsolutePath();
+
+        //if it's an archive, change the outputs so they go to a folder instead. this is a workaround
+        //for repeated publishes to the same output archive recreating that archive every publish
+        Pattern archivePtn = Pattern.compile("(!$|![\\\\|/])"); //must end with ! or contain !\ or !/
+        Matcher mtch = archivePtn.matcher(input);
+        if(mtch.find()) {
+            //remove '!'
+            input = input.substring(0, mtch.start()) + input.substring(mtch.start() + 1);
+
+            //swap '.' for '_'
+            int archiveDot = input.lastIndexOf(".", mtch.start());
+            if(archiveDot != -1) {
+                input = input.substring(0, archiveDot) + "_" + input.substring(archiveDot + 1);
+            }
+        }
+
+        return new File(input);
     }
 
     DiffResult imageMagickDiff(File toolPath, String metric, File referenceImage, File newImage, File createDifferenceImage) {
@@ -274,7 +313,7 @@ public class Processor extends AgentLifeCycleAdapter {
         ByteArrayOutputStream outStream = new ByteArrayOutputStream();
         DefaultExecutor executor = new DefaultExecutor();
         executor.setStreamHandler(new PumpStreamHandler(outStream));
-
+        
         //we don't actually care about the exit code unless it's 2, in which case something has genuinely gone wrong
         executor.setExitValues(new int[] { 0, 1 });
 
@@ -306,6 +345,7 @@ public class Processor extends AgentLifeCycleAdapter {
             try {
                 executor.execute(cmdLine);
             } catch (Exception e) {
+                //TODO log.error(e.toString());
                 return false;
             }
 
@@ -324,6 +364,7 @@ public class Processor extends AgentLifeCycleAdapter {
             executor.execute(cmdLine);
             return true;
         } catch (Exception e) {
+            //TODO: log.error(e.toString());
             return false;
         }
     }
