@@ -7,6 +7,7 @@ import javax.servlet.http.HttpServletRequest;
 import org.jetbrains.annotations.NotNull;
 
 import jetbrains.buildServer.serverSide.BuildsManager;
+import jetbrains.buildServer.serverSide.RelativeWebLinks;
 import jetbrains.buildServer.serverSide.SBuild;
 import jetbrains.buildServer.serverSide.SBuildServer;
 import jetbrains.buildServer.serverSide.SBuildType;
@@ -20,17 +21,16 @@ import novemberdobby.teamcity.imageComp.common.Constants;
 public class RedirectToTypeTab extends BuildTab {
 
     SBuildServer m_server;
-    WebLinks m_links;
 
     public RedirectToTypeTab(WebControllerManager manager, BuildsManager buildManager, PluginDescriptor descriptor, SBuildServer server, WebLinks links) {
         super(Constants.REDIRECT_TAB_ID, Constants.TAB_TITLE, manager, buildManager, descriptor.getPluginResourcesPath(Constants.REDIRECT_TAB_JSP));
         m_server = server;
-        m_links = links;
     }
 
     @Override
     protected void fillModel(Map<String, Object> model, SBuild build) {
-        String url = String.format("%s&tab=%s", m_links.getConfigurationHomePageUrl(build.getBuildType()), Constants.TAB_ID);
+        RelativeWebLinks links = new RelativeWebLinks();
+        String url = String.format("%s&tab=%s", links.getConfigurationHomePageUrl(build.getBuildType()), Constants.TAB_ID);
         model.put("redirect", url);
     }
     

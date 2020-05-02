@@ -5,7 +5,6 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 
 import jetbrains.buildServer.serverSide.SBuildType;
-import jetbrains.buildServer.serverSide.WebLinks;
 import jetbrains.buildServer.serverSide.auth.Permission;
 import jetbrains.buildServer.users.SUser;
 import jetbrains.buildServer.web.openapi.buildType.BuildTypeTab;
@@ -13,18 +12,16 @@ import jetbrains.buildServer.web.util.SessionUser;
 import jetbrains.buildServer.web.openapi.PluginDescriptor;
 import jetbrains.buildServer.web.openapi.WebControllerManager;
 import jetbrains.buildServer.serverSide.ProjectManager;
-
+import jetbrains.buildServer.serverSide.RelativeWebLinks;
 import novemberdobby.teamcity.imageComp.common.Constants;
 
 public class ImagesTab extends BuildTypeTab {
 
     String m_resourcePath;
-    WebLinks m_links;
 
-    public ImagesTab(WebControllerManager manager, ProjectManager projManager, PluginDescriptor descriptor, WebLinks links) {
+    public ImagesTab(WebControllerManager manager, ProjectManager projManager, PluginDescriptor descriptor, RelativeWebLinks links) {
         super(Constants.TAB_ID, Constants.TAB_TITLE, manager, projManager, descriptor.getPluginResourcesPath("view_results.jsp"));
         m_resourcePath = descriptor.getPluginResourcesPath();
-        m_links = links;
     }
 
     @Override
@@ -34,11 +31,13 @@ public class ImagesTab extends BuildTypeTab {
         model.put("buildTypeExtID", buildType.getExternalId());
         model.put("projectIntId", buildType.getProjectId());
 
-        //add the address for viewing this tab, it could all be done in JS but ew
-        model.put("viewTypeImageCompUrl", String.format("%s&tab=%s", m_links.getConfigurationHomePageUrl(buildType), Constants.TAB_ID));
+        RelativeWebLinks relativeWebLinks = new RelativeWebLinks();
         
-        model.put("viewTypeStatsUrl", String.format("%s&tab=buildTypeStatistics", m_links.getConfigurationHomePageUrl(buildType)));
-        model.put("viewProjectStatsUrl", String.format("%s&tab=stats", m_links.getProjectPageUrl(buildType.getProjectExternalId())));
+        //add the address for viewing this tab, it could all be done in JS but ew
+        model.put("viewTypeImageCompUrl", String.format("%s&tab=%s", relativeWebLinks.getConfigurationHomePageUrl(buildType), Constants.TAB_ID));
+        
+        model.put("viewTypeStatsUrl", String.format("%s&tab=buildTypeStatistics", relativeWebLinks.getConfigurationHomePageUrl(buildType)));
+        model.put("viewProjectStatsUrl", String.format("%s&tab=stats", relativeWebLinks.getProjectPageUrl(buildType.getProjectExternalId())));
     }
 
     @Override
