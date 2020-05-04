@@ -19,7 +19,7 @@ public class ImagesTab extends BuildTypeTab {
 
     String m_resourcePath;
 
-    public ImagesTab(WebControllerManager manager, ProjectManager projManager, PluginDescriptor descriptor, RelativeWebLinks links) {
+    public ImagesTab(WebControllerManager manager, ProjectManager projManager, PluginDescriptor descriptor) {
         super(Constants.TAB_ID, Constants.TAB_TITLE, manager, projManager, descriptor.getPluginResourcesPath("view_results.jsp"));
         m_resourcePath = descriptor.getPluginResourcesPath();
     }
@@ -31,13 +31,13 @@ public class ImagesTab extends BuildTypeTab {
         model.put("buildTypeExtID", buildType.getExternalId());
         model.put("projectIntId", buildType.getProjectId());
 
-        RelativeWebLinks relativeWebLinks = new RelativeWebLinks();
+        RelativeWebLinks links = new RelativeWebLinks();
         
         //add the address for viewing this tab, it could all be done in JS but ew
-        model.put("viewTypeImageCompUrl", String.format("%s&tab=%s", relativeWebLinks.getConfigurationHomePageUrl(buildType), Constants.TAB_ID));
+        model.put("viewTypeImageCompUrl", String.format("%s&tab=%s", links.getConfigurationHomePageUrl(buildType), Constants.TAB_ID));
         
-        model.put("viewTypeStatsUrl", String.format("%s&tab=buildTypeStatistics", relativeWebLinks.getConfigurationHomePageUrl(buildType)));
-        model.put("viewProjectStatsUrl", String.format("%s&tab=stats", relativeWebLinks.getProjectPageUrl(buildType.getProjectExternalId())));
+        model.put("viewTypeStatsUrl", String.format("%s&tab=buildTypeStatistics", links.getConfigurationHomePageUrl(buildType)));
+        model.put("viewProjectStatsUrl", String.format("%s&tab=stats", links.getProjectPageUrl(buildType.getProjectExternalId())));
     }
 
     @Override

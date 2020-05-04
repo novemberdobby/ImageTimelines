@@ -11,7 +11,6 @@ import jetbrains.buildServer.serverSide.RelativeWebLinks;
 import jetbrains.buildServer.serverSide.SBuild;
 import jetbrains.buildServer.serverSide.SBuildServer;
 import jetbrains.buildServer.serverSide.SBuildType;
-import jetbrains.buildServer.serverSide.WebLinks;
 import jetbrains.buildServer.web.openapi.BuildTab;
 import jetbrains.buildServer.web.openapi.PluginDescriptor;
 import jetbrains.buildServer.web.openapi.WebControllerManager;
@@ -22,7 +21,7 @@ public class RedirectToTypeTab extends BuildTab {
 
     SBuildServer m_server;
 
-    public RedirectToTypeTab(WebControllerManager manager, BuildsManager buildManager, PluginDescriptor descriptor, SBuildServer server, WebLinks links) {
+    public RedirectToTypeTab(WebControllerManager manager, BuildsManager buildManager, PluginDescriptor descriptor, SBuildServer server) {
         super(Constants.REDIRECT_TAB_ID, Constants.TAB_TITLE, manager, buildManager, descriptor.getPluginResourcesPath(Constants.REDIRECT_TAB_JSP));
         m_server = server;
     }
