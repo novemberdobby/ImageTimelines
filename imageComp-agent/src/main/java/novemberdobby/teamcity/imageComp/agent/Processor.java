@@ -145,7 +145,7 @@ public class Processor extends AgentLifeCycleAdapter {
                             File refImage = stored.getValue().first;
                             File newImage = stored.getValue().second;
 
-                            if(!compare(build, params, artifactName, refImage, refBuildNumber, newImage)) {
+                            if(!compare(build, problemOnError, params, artifactName, refImage, refBuildNumber, newImage)) {
                                 logError(log, problemOnError, "Image comparison failed for " + artifactName);
                             }
 
@@ -171,14 +171,15 @@ public class Processor extends AgentLifeCycleAdapter {
 
     void logError(BuildProgressLogger log, boolean problemOnError, String error) {
         if(problemOnError) {
-            BuildProblemData buildProblem = BuildProblemData.createBuildProblem(error, BuildProblemData.TC_USER_PROVIDED_TYPE, error);
+            String identity = error.length() > 60 ? error.substring(0, 60) : error;
+            BuildProblemData buildProblem = BuildProblemData.createBuildProblem(identity, BuildProblemData.TC_USER_PROVIDED_TYPE, error);
             log.logBuildProblem(buildProblem);
         } else {
             log.error(error);
         }
     }
 
-    boolean compare(AgentRunningBuild build, Map<String, String> params, String artifactName, File referenceImage, String referenceVersion, File newImage) {
+    boolean compare(AgentRunningBuild build, boolean problemOnError, Map<String, String> params, String artifactName, File referenceImage, String referenceVersion, File newImage) {
         BuildProgressLogger log = build.getBuildLogger();
         
         ValueResolver resolvedParams = build.getSharedParametersResolver();
@@ -249,7 +250,7 @@ public class Processor extends AgentLifeCycleAdapter {
                     log.message(String.format("##teamcity[buildStatisticValue key='ic_%s_%s' value='%.6f']", artifactName, metric, diff.DifferenceAmount));
 
                 } else {
-                    log.error(String.format("Result for %s: %s", metric.toUpperCase(), diff.StandardOut));
+                    logError(log, problemOnError, String.format("Result for %s: %s", metric.toUpperCase(), diff.StandardOut));
                 }
 
                 if(build.getInterruptReason() != null) {
@@ -264,10 +265,10 @@ public class Processor extends AgentLifeCycleAdapter {
                 File[] images = new File[] { referenceImage, newImage };
                 String[] annotations = new String[] { String.format("Baseline: #%s", build.getBuildNumber()), String.format("This build: #%s", referenceVersion) };
 
-                if(imageMagickAnimate(magick, images, annotations, tempAnimatedImage)) {
+                if(imageMagickAnimate(diffImagesTemp, log, magick, images, annotations, tempAnimatedImage)) {
                     log.message(String.format("##teamcity[publishArtifacts '%s => %s']", tempAnimatedImage.getAbsolutePath(), Constants.ARTIFACTS_RESULT_PATH + publishToFolder));
                 } else {
-                    log.error(String.format("Webp creation failed for %s", tempAnimatedImage.getAbsolutePath()));
+                    logError(log, problemOnError, String.format("Webp creation failed for %s", tempAnimatedImage.getAbsolutePath()));
                 }
             }
         } finally {
@@ -317,7 +318,7 @@ public class Processor extends AgentLifeCycleAdapter {
         //we don't actually care about the exit code unless it's 2, in which case something has genuinely gone wrong
         executor.setExitValues(new int[] { 0, 1 });
 
-        executor.setWatchdog(new ExecuteWatchdog(20000)); //this should be fairly quick to run
+        executor.setWatchdog(new ExecuteWatchdog(60000));
         try {
             executor.execute(cmdLine);
             return new DiffResult(false, outStream.toString());
@@ -326,7 +327,7 @@ public class Processor extends AgentLifeCycleAdapter {
         }
     }
 
-    boolean imageMagickAnimate(File toolPath, File[] images, String[] annotations, File createImage) {
+    boolean imageMagickAnimate(File tempDirectory, BuildProgressLogger log, File toolPath, File[] images, String[] annotations, File createImage) {
         
         ByteArrayOutputStream outStream = new ByteArrayOutputStream();
         DefaultExecutor executor = new DefaultExecutor();
@@ -336,16 +337,19 @@ public class Processor extends AgentLifeCycleAdapter {
         //annotate each image
         for (int i = 0; i < images.length; i++) {
 
+            File tempFile = new File(tempDirectory, "draw.txt");
+            Util.writeStrToFile(tempFile, String.format("text 10,10 '%s'", annotations[i]));
+
             CommandLine cmdLine = new CommandLine(toolPath.getAbsolutePath());
             cmdLine.addArgument("mogrify"); //modify in-place
-            cmdLine.addArguments("-quality 100 -background #888f -gravity north -splice 0x43 -gravity northwest -pointsize 20 -draw");
-            cmdLine.addArgument(String.format("text 10,10 '%s'", annotations[i]));
+            cmdLine.addArguments("-quality 100 -background #888f -gravity north -splice 0x43 -gravity northwest -pointsize 20 -draw @" + tempFile.getAbsolutePath());
             cmdLine.addArgument(images[i].getAbsolutePath());
 
             try {
                 executor.execute(cmdLine);
-            } catch (Exception e) {
-                //TODO log.error(e.toString());
+            } catch (Throwable e) {
+                log.error(e.toString());
+                log.error("Output: " + outStream.toString());
                 return false;
             }
 
@@ -363,8 +367,9 @@ public class Processor extends AgentLifeCycleAdapter {
         try {
             executor.execute(cmdLine);
             return true;
-        } catch (Exception e) {
-            //TODO: log.error(e.toString());
+        } catch (Throwable e) {
+            log.error(e.toString());
+            log.error("Output: " + outStream.toString());
             return false;
         }
     }

@@ -2,6 +2,7 @@ package novemberdobby.teamcity.imageComp.common;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -70,5 +71,27 @@ public class Util {
         .replace("'", "|'")
         .replace("[", "|[")
         .replace("]", "|]");
+	}
+
+	public static boolean writeStrToFile(File file, String str) {
+        FileWriter fWriter = null;
+
+        try {
+            fWriter = new FileWriter(file, false);
+            fWriter.write(str);
+            return true;
+        } catch (Exception e) {
+
+        } finally {
+            try {
+                if(fWriter != null) {
+                    fWriter.close();
+                }
+            } catch (Exception e) {
+                
+            }
+        }
+
+        return false;
 	}
 }
