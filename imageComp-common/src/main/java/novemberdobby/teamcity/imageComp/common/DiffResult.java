@@ -12,7 +12,8 @@ public class DiffResult {
         //so fudge the "result" and just try to send a number back
         if(!threwException) {
 
-            if("1.#INF".equals(output)) {
+            //PSNR returns inf for identical images
+            if("1.#INF".equals(output) || "inf".equals(output)) {
                 DifferenceAmount = 0D;
                 Success = true;
             }
