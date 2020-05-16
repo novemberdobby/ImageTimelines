@@ -72,6 +72,11 @@ public class ScanFeature extends BuildFeature {
         
         sb.append("\r\n\r\n");
         sb.append(String.format("Compare using methods: %s", String.join(", ", Util.getCompareMetrics(params)).toUpperCase()));
+
+        if("true".equals(params.get(Constants.FEATURE_SETTING_FAIL_ON_ERROR))) {
+            sb.append("\r\n\r\n");
+            sb.append("Fail the build on any comparison error");
+        }
         
         return sb.toString();
     }
