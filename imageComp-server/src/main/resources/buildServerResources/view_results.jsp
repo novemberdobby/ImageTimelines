@@ -41,7 +41,7 @@
     Builds
     <forms:saving id="getImgDataProgressBuilds" style="float: right;"/>
     <br>
-    <select id="img_comp_opt_count"  onchange="BS.ImageCompResults.getData()">
+    <select id="img_comp_opt_count"  onchange="BS.ImageCompResults.getData(); BS.ImageCompResults.updateUrl()">
       <option value="100" selected="true">100</option>
       <option value="200">200</option>
       <option value="500">500</option>
@@ -52,13 +52,13 @@
   <div class="icOption">
     Artifact
     <br>
-    <select id="img_comp_opt_artifact" onchange="BS.ImageCompResults.changeArtifact()"></select>
+    <select id="img_comp_opt_artifact" onchange="BS.ImageCompResults.changeArtifact(); BS.ImageCompResults.updateUrl()"></select>
   </div>
 
   <div class="icOption">
     Statistic
     <br>
-    <select id="img_comp_opt_metric" onchange="BS.ImageCompResults.drawGraph()">
+    <select id="img_comp_opt_metric" onchange="BS.ImageCompResults.drawGraph(); BS.ImageCompResults.updateUrl()">
       <option value="-">-</option>
     </select>
   </div>
@@ -66,7 +66,7 @@
   <div class="icOption">
     View mode
     <br>
-    <select id="img_comp_opt_view_mode" onchange="BS.ImageCompResults.updateView()">
+    <select id="img_comp_opt_view_mode" onchange="BS.ImageCompResults.updateView(); BS.ImageCompResults.updateUrl()">
       <option value="sxs">Side by side</option>
       <option value="slider">Diff slider</option>
       <option value="diff">Diff image</option>
@@ -79,9 +79,6 @@
       <jsp:attribute name="content">
         <div>
           <ul class="menuList">
-            <l:li>
-              <a href="#" onclick="BS.ImageCompResults.gotoPermaLink()">Go to permalink</a>
-            </l:li>
             <l:li>
               <a href="#" onclick="BS.ImageCompResults.createStatsGraph(false)">Create graph (on build type)</a>
             </l:li>
@@ -405,6 +402,16 @@
       }
     },
 
+    updateViewInitial: function() { 
+      var params = new URLSearchParams(window.location.search);
+      if(params.has("ic_count")) $('img_comp_opt_count').value = params.get("ic_count");
+      BS.ImageCompResults.SetArtifact = params.get("ic_artifact");
+      BS.ImageCompResults.SetMetric = params.get("ic_metric");
+      if(params.has("ic_view_mode")) $('img_comp_opt_view_mode').value = params.get("ic_view_mode");
+
+      BS.ImageCompResults.getData();
+    },
+
     updateView: function() {
       if(BS.ImageCompResults.SelectedIndex == -1 || BS.ImageCompResults.CurrentChartData == undefined) {
         return;
@@ -514,14 +521,17 @@
       }
     },
 
-    gotoPermaLink() {
-      var newUrl = "${viewTypeImageCompUrl}"
-        + "&ic_count=" + $('img_comp_opt_count').value
-        + "&ic_artifact=" + $('img_comp_opt_artifact').value
-        + "&ic_metric=" + $('img_comp_opt_metric').value
-        + "&ic_view_mode=" + $('img_comp_opt_view_mode').value;
-      
-      document.location = newUrl;
+    updateUrl() {
+
+      if(window.history.pushState) {
+        var thisUrl = new URL(document.location);
+        thisUrl.searchParams.set('ic_count', $('img_comp_opt_count').value);
+        thisUrl.searchParams.set('ic_artifact', $('img_comp_opt_artifact').value);
+        thisUrl.searchParams.set('ic_metric', $('img_comp_opt_metric').value);
+        thisUrl.searchParams.set('ic_view_mode', $('img_comp_opt_view_mode').value);
+
+        window.history.pushState(null, null, thisUrl);
+      }
     },
 
     createStatsGraph(onParentProject) {
@@ -566,13 +576,12 @@
     }
   };
   
-  var params = new URLSearchParams(window.location.search);
-  if(params.has("ic_count")) $('img_comp_opt_count').value = params.get("ic_count");
-  BS.ImageCompResults.SetArtifact = params.get("ic_artifact");
-  BS.ImageCompResults.SetMetric = params.get("ic_metric");
-  if(params.has("ic_view_mode")) $('img_comp_opt_view_mode').value = params.get("ic_view_mode");
-
-  BS.ImageCompResults.getData();
+  BS.ImageCompResults.updateViewInitial();
   document.addEventListener('keydown', BS.ImageCompResults.keyDown);
+
+  window.addEventListener('popstate', function() {
+    //TODO: we could check what has actually changed here to avoid calling getData() when we don't need to, but it works!
+    BS.ImageCompResults.updateViewInitial();
+  });
 
 </script>
