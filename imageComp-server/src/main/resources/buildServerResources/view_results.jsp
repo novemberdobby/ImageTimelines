@@ -52,13 +52,13 @@
   <div class="icOption">
     Artifact
     <br>
-    <select id="img_comp_opt_artifact" onchange="BS.ImageCompResults.changeArtifact(); BS.ImageCompResults.updateUrl()"></select>
+    <select id="img_comp_opt_artifact" onchange="BS.ImageCompResults.updateArtifact(); BS.ImageCompResults.updateUrl()"></select>
   </div>
 
   <div class="icOption">
     Statistic
     <br>
-    <select id="img_comp_opt_metric" onchange="BS.ImageCompResults.drawGraph(); BS.ImageCompResults.updateUrl()">
+    <select id="img_comp_opt_metric" onchange="BS.ImageCompResults.updateGraph(); BS.ImageCompResults.updateUrl()">
       <option value="-">-</option>
     </select>
   </div>
@@ -262,11 +262,11 @@
 
         BS.Util.show('statistics_container');
         $('img_comp_options').style.display = "flex";
-        BS.ImageCompResults.changeArtifact();
+        BS.ImageCompResults.updateArtifact();
       }
     },
 
-    changeArtifact: function() {
+    updateArtifact: function() {
       //fill stats dropdown based on selected artifact
       var ddArtifacts = $('img_comp_opt_artifact');
       var ddMetrics = $('img_comp_opt_metric');
@@ -292,10 +292,10 @@
       }
 
       //show initial graph
-      BS.ImageCompResults.drawGraph();
+      BS.ImageCompResults.updateGraph();
     },
 
-    drawGraph: function() {
+    updateGraph: function() {
       $j('.statistics_images').css("display", "none");
       BS.Util.show('img_comp_hint');
       var targetArtifact = $('img_comp_opt_artifact').value;
@@ -597,10 +597,10 @@
       BS.ImageCompResults.getData();
     } else {
       if(artChange) {
-        BS.ImageCompResults.changeArtifact();
+        BS.ImageCompResults.updateArtifact();
       }
       if(metChange) {
-        BS.ImageCompResults.drawGraph();
+        BS.ImageCompResults.updateGraph();
       }
       if(viewChange) {
         BS.ImageCompResults.updateView();
