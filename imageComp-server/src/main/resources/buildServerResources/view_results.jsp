@@ -41,7 +41,7 @@
     Builds
     <forms:saving id="getImgDataProgressBuilds" style="float: right;"/>
     <br>
-    <select id="img_comp_opt_count"  onchange="BS.ImageCompResults.getData(); BS.ImageCompResults.updateUrl()">
+    <select id="img_comp_opt_count" onchange="BS.ImageCompResults.getData(); BS.ImageCompResults.updateUrl()">
       <option value="100" selected="true">100</option>
       <option value="200">200</option>
       <option value="500">500</option>
@@ -401,17 +401,7 @@
         BS.ImageCompResults.SelectedIndex = -1;
       }
     },
-
-    updateViewInitial: function() { 
-      var params = new URLSearchParams(window.location.search);
-      if(params.has("ic_count")) $('img_comp_opt_count').value = params.get("ic_count");
-      BS.ImageCompResults.SetArtifact = params.get("ic_artifact");
-      BS.ImageCompResults.SetMetric = params.get("ic_metric");
-      if(params.has("ic_view_mode")) $('img_comp_opt_view_mode').value = params.get("ic_view_mode");
-
-      BS.ImageCompResults.getData();
-    },
-
+    
     updateView: function() {
       if(BS.ImageCompResults.SelectedIndex == -1 || BS.ImageCompResults.CurrentChartData == undefined) {
         return;
@@ -432,56 +422,56 @@
           'artifact': artifact,
         },
         onComplete: function(transport) {
-            if(transport.status == 200)
-            {
-              //fill everything out
-              var comma = transport.responseText.indexOf(',');
-              var baselineId = transport.responseText.substring(0, comma);
-              var baselineNumber = transport.responseText.substring(comma + 1);
+          if(transport.status == 200)
+          {
+            //fill everything out
+            var comma = transport.responseText.indexOf(',');
+            var baselineId = transport.responseText.substring(0, comma);
+            var baselineNumber = transport.responseText.substring(comma + 1);
 
-              var compType = $('img_comp_opt_view_mode').value;
+            var compType = $('img_comp_opt_view_mode').value;
 
-              BS.Util.hide('img_comp_hint');
-              $j('.statistics_images').css("display", "none");
-              $('statistics_images_' + compType).style.display = (compType == "sxs" || compType == "diff") ? "flex" : "";
-              
-              if(compType == "diff") {
-                var diffImage = BS.ImageCompResults.getResultFileName(artifact, "_diff");
-                $('img_comp_difference').src = $('img_comp_difference_image').href = "/repository/download/${buildTypeExtID}/" + thisBuild.id + ":id/" + diffImage;
-                $('img_comp_difference_image').innerText = "Diff image";
-              }
-              
-              if(compType == "anim") {
-                var animImage = BS.ImageCompResults.getResultFileName(artifact, "_animated", "webp");
-                $('img_comp_anim_diff').src = "/repository/download/${buildTypeExtID}/" + thisBuild.id + ":id/" + animImage;
-              } else {
-                $('img_comp_left_' + compType).src = "/repository/download/${buildTypeExtID}/" + baselineId + ":id/" + artifact;
-                $('img_comp_right_' + compType).src = "/repository/download/${buildTypeExtID}/" + thisBuild.id + ":id/" + artifact;
+            BS.Util.hide('img_comp_hint');
+            $j('.statistics_images').css("display", "none");
+            $('statistics_images_' + compType).style.display = (compType == "sxs" || compType == "diff") ? "flex" : "";
+            
+            if(compType == "diff") {
+              var diffImage = BS.ImageCompResults.getResultFileName(artifact, "_diff");
+              $('img_comp_difference').src = $('img_comp_difference_image').href = "/repository/download/${buildTypeExtID}/" + thisBuild.id + ":id/" + diffImage;
+              $('img_comp_difference_image').innerText = "Diff image";
+            }
+            
+            if(compType == "anim") {
+              var animImage = BS.ImageCompResults.getResultFileName(artifact, "_animated", "webp");
+              $('img_comp_anim_diff').src = "/repository/download/${buildTypeExtID}/" + thisBuild.id + ":id/" + animImage;
+            } else {
+              $('img_comp_left_' + compType).src = "/repository/download/${buildTypeExtID}/" + baselineId + ":id/" + artifact;
+              $('img_comp_right_' + compType).src = "/repository/download/${buildTypeExtID}/" + thisBuild.id + ":id/" + artifact;
 
-                $('img_comp_left_label_' + compType).href = "/viewLog.html?buildId=" + baselineId;
-                $('img_comp_left_label_' + compType).innerText = "Baseline: #" + baselineNumber;
-                $('img_comp_right_label_' + compType).href = "/viewLog.html?buildId=" + thisBuild.id;
-                $('img_comp_right_label_' + compType).innerText = "This build: #" + thisBuild.number;
+              $('img_comp_left_label_' + compType).href = "/viewLog.html?buildId=" + baselineId;
+              $('img_comp_left_label_' + compType).innerText = "Baseline: #" + baselineNumber;
+              $('img_comp_right_label_' + compType).href = "/viewLog.html?buildId=" + thisBuild.id;
+              $('img_comp_right_label_' + compType).innerText = "This build: #" + thisBuild.number;
 
-                if(compType == "slider" && BS.ImageCompResults.SliderInit == undefined) {
-                  BS.ImageCompResults.SliderInit = true;
-                  $j('.slider').slider();
-                }
-              }
-
-              var images = $('statistics_images_' + compType).getElementsByTagName("img");
-              for(var i = 0; i < images.length; i++) {
-                var parent = images[i].parentElement;
-                if(parent != undefined && parent.tagName == "A") {
-                  parent.href = images[i].src;
-                  parent.target="_blank";
-                }
+              if(compType == "slider" && BS.ImageCompResults.SliderInit == undefined) {
+                BS.ImageCompResults.SliderInit = true;
+                $j('.slider').slider();
               }
             }
-            else
-            {
-                alert("Failed to look up baseline image (code " + transport.status + ")");
+
+            var images = $('statistics_images_' + compType).getElementsByTagName("img");
+            for(var i = 0; i < images.length; i++) {
+              var parent = images[i].parentElement;
+              if(parent != undefined && parent.tagName == "A") {
+                parent.href = images[i].src;
+                parent.target = "_blank";
+              }
             }
+          }
+          else
+          {
+              alert("Failed to look up baseline image (code " + transport.status + ")");
+          }
         }
       });
     },
@@ -575,13 +565,47 @@
       });
     }
   };
+
+  var params = new URLSearchParams(window.location.search);
+  if(params.has("ic_count")) $('img_comp_opt_count').value = params.get("ic_count");
+  BS.ImageCompResults.SetArtifact = params.get("ic_artifact");
+  BS.ImageCompResults.SetMetric = params.get("ic_metric");
+  if(params.has("ic_view_mode")) $('img_comp_opt_view_mode').value = params.get("ic_view_mode");
+  BS.ImageCompResults.getData();
   
-  BS.ImageCompResults.updateViewInitial();
   document.addEventListener('keydown', BS.ImageCompResults.keyDown);
 
-  window.addEventListener('popstate', function() {
-    //TODO: we could check what has actually changed here to avoid calling getData() when we don't need to, but it works!
-    BS.ImageCompResults.updateViewInitial();
+  window.addEventListener('popstate', function(e) {
+
+    var newParams = new URL(document.location).searchParams;
+    var count = newParams.get("ic_count");
+    var artifact = newParams.get("ic_artifact");
+    var metric = newParams.get("ic_metric");
+    var view_mode = newParams.get("ic_view_mode");
+
+    var doFullRefresh = $('img_comp_opt_count').value != count;
+    var artChange = $('img_comp_opt_artifact').value != artifact;
+    var metChange = $('img_comp_opt_metric').value != metric;
+    var viewChange = $('img_comp_opt_view_mode').value != view_mode;
+
+    $('img_comp_opt_count').value = count;
+    $('img_comp_opt_artifact').value = artifact;
+    $('img_comp_opt_metric').value = metric;
+    $('img_comp_opt_view_mode').value = view_mode;
+
+    if(doFullRefresh) {
+      BS.ImageCompResults.getData();
+    } else {
+      if(artChange) {
+        BS.ImageCompResults.changeArtifact();
+      }
+      if(metChange) {
+        BS.ImageCompResults.drawGraph();
+      }
+      if(viewChange) {
+        BS.ImageCompResults.updateView();
+      }
+    }
   });
 
 </script>

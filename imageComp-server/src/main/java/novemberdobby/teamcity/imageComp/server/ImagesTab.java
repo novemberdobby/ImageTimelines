@@ -33,9 +33,6 @@ public class ImagesTab extends BuildTypeTab {
 
         RelativeWebLinks links = new RelativeWebLinks();
         
-        //add the address for viewing this tab, it could all be done in JS but ew
-        model.put("viewTypeImageCompUrl", String.format("%s&tab=%s", links.getConfigurationHomePageUrl(buildType), Constants.TAB_ID));
-        
         model.put("viewTypeStatsUrl", String.format("%s&tab=buildTypeStatistics", links.getConfigurationHomePageUrl(buildType)));
         model.put("viewProjectStatsUrl", String.format("%s&tab=stats", links.getProjectPageUrl(buildType.getProjectExternalId())));
     }
