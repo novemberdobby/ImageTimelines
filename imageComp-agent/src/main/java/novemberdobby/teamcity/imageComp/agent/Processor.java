@@ -306,7 +306,6 @@ public class Processor extends AgentLifeCycleAdapter {
         CommandLine cmdLine = new CommandLine(toolPath.getAbsolutePath());
         cmdLine.addArguments("compare -quality 100 -metric");
         cmdLine.addArgument(metric);
-        cmdLine.addArguments("-compose src");
         cmdLine.addArgument(referenceImage.getAbsolutePath());
         cmdLine.addArgument(newImage.getAbsolutePath());
         cmdLine.addArgument(createDifferenceImage.getAbsolutePath());
