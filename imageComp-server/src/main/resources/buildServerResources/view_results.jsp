@@ -209,7 +209,7 @@
     },
 
     parseData: function(buildData) {
-      Artifacts = {};
+      BS.ImageCompResults.Artifacts = {};
       for (var i = buildData.build.length - 1; i >= 0; i--) {
         const build = buildData.build[i];
         build.statistics.property.forEach(p => {
@@ -217,16 +217,16 @@
           var match = p.name.match("ic_(.+)_([\\w]+)"); //ic_<artifactname>_<metricname>
           if(match != undefined) {
             var name = match[1];
-            if(Artifacts[name] == undefined) {
-                Artifacts[name] = {};
+            if(BS.ImageCompResults.Artifacts[name] == undefined) {
+                BS.ImageCompResults.Artifacts[name] = {};
             }
 
             var stat = match[2];
-            if(Artifacts[name][stat] == undefined) {
-              Artifacts[name][stat] = [];
+            if(BS.ImageCompResults.Artifacts[name][stat] == undefined) {
+              BS.ImageCompResults.Artifacts[name][stat] = [];
             }
 
-            Artifacts[name][stat].push({
+            BS.ImageCompResults.Artifacts[name][stat].push({
               number: build.number,
               value: p.value,
               date: new moment(build.startDate),
@@ -239,7 +239,7 @@
       BS.Util.hide('getImgDataProgress');
       BS.Util.hide('getImgDataProgressBuilds');
 
-      if(Object.keys(Artifacts).length == 0) {
+      if(Object.keys(BS.ImageCompResults.Artifacts).length == 0) {
         BS.Util.show('statistics_empty');
       } else {
         //fill artifact dropdown
@@ -251,7 +251,7 @@
         }
 
         ddArtifacts.innerHTML = "";
-        for(var art in Artifacts) {
+        for(var art in BS.ImageCompResults.Artifacts) {
           ddArtifacts.options.add(new Option(art, art))
         }
         var newArtifact = ddArtifacts.value;
@@ -278,10 +278,10 @@
 
       ddMetrics.innerHTML = "";
 
-      const targetArtifact = Artifacts[ddArtifacts.value];
+      const targetArtifact = BS.ImageCompResults.Artifacts[ddArtifacts.value];
       if(targetArtifact != undefined) {
         for(var stat in targetArtifact) {
-          ddMetrics.options.add(new Option(stat, stat))
+          ddMetrics.options.add(new Option(stat, stat));
         }
       }
       
@@ -301,7 +301,6 @@
       var targetArtifact = $('img_comp_opt_artifact').value;
       var targetMetric = $('img_comp_opt_metric').value;
       
-      //TODO: support showing multiple sets e.g. psnr + dssim etc. will need to reintroduce category spacing & make colours show metric
       //set up chart
       var context = document.getElementById('stats_chart').getContext('2d');
       if(BS.ImageCompResults.Chart == undefined) {
@@ -331,7 +330,6 @@
               displayColors: false,
               callbacks: {
                 label: function(tooltipItem, data) {
-                  //TODO show metric in multimetric mode, data.datasets[tooltipItem.datasetIndex].label
                   return ["Started " + BS.ImageCompResults.CurrentChartData[tooltipItem.index].date.format("llll")];
                 }
               }
@@ -350,10 +348,10 @@
       BS.ImageCompResults.Chart.data.datasets.clear();
 
       //collect data
-      const target = Artifacts[targetArtifact][targetMetric];
+      const target = BS.ImageCompResults.Artifacts[targetArtifact][targetMetric];
       BS.ImageCompResults.CurrentChartData = target;
       const values = target.map(d => d.value);
-      var targetMin = 0; //TODO: is this OK to assume for all metrics?
+      var targetMin = 0;
       var targetMax = values.reduce((a, b) => Math.max(a, b));
 
       var lerp = function(a, b, c) { return a + (b - a) * c; }
@@ -413,7 +411,7 @@
       var artifact = $('img_comp_opt_artifact').value;
       
       //TODO: support dedicated page for more real estate
-      //TODO: test with various sized images & mismatched
+      //TODO: test with various sized images & mismatched - same ratio & otherwise
       //get the build to compare against
       BS.ajaxRequest(window['base_uri'] + '${artifact_lookup_url}', {
         method: "GET",
