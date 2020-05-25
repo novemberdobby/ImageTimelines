@@ -51,7 +51,7 @@ public class DownloadedArtifactsRequest extends BaseController {
 
         SBuildType type = build.getBuildType();
         if(type == null || !user.isPermissionGrantedForProject(type.getProjectId(), Permission.VIEW_PROJECT)) {
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid build type or no permission");
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid build type or no permission to view");
             return null;
         }
 

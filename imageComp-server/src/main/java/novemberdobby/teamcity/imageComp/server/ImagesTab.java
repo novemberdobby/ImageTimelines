@@ -20,12 +20,13 @@ public class ImagesTab extends BuildTypeTab {
     String m_resourcePath;
 
     public ImagesTab(WebControllerManager manager, ProjectManager projManager, PluginDescriptor descriptor) {
-        super(Constants.TAB_ID, Constants.TAB_TITLE, manager, projManager, descriptor.getPluginResourcesPath("view_results.jsp"));
+        super(Constants.TAB_ID, Constants.TAB_TITLE, manager, projManager, descriptor.getPluginResourcesPath(Constants.MAIN_JSP));
         m_resourcePath = descriptor.getPluginResourcesPath();
     }
 
     @Override
     protected void fillModel(Map<String, Object> model, HttpServletRequest request, SBuildType buildType, SUser user) {
+        model.put("external", false);
         model.put("resources", m_resourcePath);
         model.put("buildTypeIntID", buildType.getBuildTypeId());
         model.put("buildTypeExtID", buildType.getExternalId());
