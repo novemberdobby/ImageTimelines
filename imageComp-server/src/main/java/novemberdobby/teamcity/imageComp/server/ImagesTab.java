@@ -12,7 +12,6 @@ import jetbrains.buildServer.web.util.SessionUser;
 import jetbrains.buildServer.web.openapi.PluginDescriptor;
 import jetbrains.buildServer.web.openapi.WebControllerManager;
 import jetbrains.buildServer.serverSide.ProjectManager;
-import jetbrains.buildServer.serverSide.RelativeWebLinks;
 import novemberdobby.teamcity.imageComp.common.Constants;
 
 public class ImagesTab extends BuildTypeTab {
@@ -26,16 +25,7 @@ public class ImagesTab extends BuildTypeTab {
 
     @Override
     protected void fillModel(Map<String, Object> model, HttpServletRequest request, SBuildType buildType, SUser user) {
-        model.put("external", false);
-        model.put("resources", m_resourcePath);
-        model.put("buildTypeIntID", buildType.getBuildTypeId());
-        model.put("buildTypeExtID", buildType.getExternalId());
-        model.put("projectIntId", buildType.getProjectId());
-
-        RelativeWebLinks links = new RelativeWebLinks();
-        
-        model.put("viewTypeStatsUrl", String.format("%s&tab=buildTypeStatistics", links.getConfigurationHomePageUrl(buildType)));
-        model.put("viewProjectStatsUrl", String.format("%s&tab=stats", links.getProjectPageUrl(buildType.getProjectExternalId())));
+        StandalonePage.populateModel(model, buildType, m_resourcePath, false);
     }
 
     @Override

@@ -46,9 +46,15 @@ public class StandalonePage extends BaseController {
             return null;
         }
 
-        model.put("external", true);
+        populateModel(model, buildType, m_descriptor.getPluginResourcesPath(), true);
+        return mv;
+    }
+    
+    public static void populateModel(Map<String, Object> model, BuildType buildType, String resourcePath, boolean externalPage) {
+
+        model.put("external", externalPage);
         model.put("title", buildType.getFullName());
-        model.put("resources", m_descriptor.getPluginResourcesPath());
+        model.put("resources", resourcePath);
         model.put("buildTypeIntID", buildType.getBuildTypeId());
         model.put("buildTypeExtID", buildType.getExternalId());
         model.put("projectIntId", buildType.getProjectId());
@@ -56,7 +62,5 @@ public class StandalonePage extends BaseController {
         RelativeWebLinks links = new RelativeWebLinks();
         model.put("viewTypeStatsUrl", String.format("%s&tab=buildTypeStatistics", links.getConfigurationHomePageUrl(buildType)));
         model.put("viewProjectStatsUrl", String.format("%s&tab=stats", links.getProjectPageUrl(buildType.getProjectExternalId())));
-
-        return mv;
     }
 }
