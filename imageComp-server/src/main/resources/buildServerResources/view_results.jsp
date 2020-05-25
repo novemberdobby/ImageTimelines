@@ -73,7 +73,7 @@
         <select id="img_comp_opt_view_mode" onchange="BS.ImageCompResults.updateView(); BS.ImageCompResults.updateUrl()">
           <option value="sxs">Side by side</option>
           <option value="slider">Diff slider</option>
-          <option value="diff">Diff image</option>
+          <option value="diff" selected="selected">Diff image</option>
           <option value="anim">Animated diff</option>
         </select>
       </div>
