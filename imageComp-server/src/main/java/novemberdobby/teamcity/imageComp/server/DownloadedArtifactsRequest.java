@@ -60,6 +60,7 @@ public class DownloadedArtifactsRequest extends BaseController {
         for (Entry<Build, List<ArtifactInfo>> sourceBuild : build.getDownloadedArtifacts().getArtifacts().entrySet()) {
             for (ArtifactInfo art : sourceBuild.getValue()) {
                 if(artifact.equals(art.getArtifactPath())) {
+                    response.setContentType("text/plain");
                     PrintWriter writer = response.getWriter();
                     writer.write(Long.toString(sourceBuild.getKey().getBuildId()));
                     writer.write(",");
