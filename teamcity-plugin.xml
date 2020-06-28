@@ -2,7 +2,7 @@
 <teamcity-plugin xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:schemas-jetbrains-com:teamcity-plugin-v1-xml">
   <info>
     <name>imageComp</name>
-    <display-name>Image Comparison</display-name>
+    <display-name>Image Timelines</display-name>
     <version>0.1</version>
     <description>Compare images in artifacts of previous builds</description>
     <download-url>-</download-url>
