@@ -1,1 +1,1 @@
-imageComp-agent/ImageMagick/ -linguist-detectable
+imageComp-agent/ImageMagick/* -linguist-detectable
