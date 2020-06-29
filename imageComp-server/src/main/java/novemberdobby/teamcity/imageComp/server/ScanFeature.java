@@ -11,8 +11,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 
-import jetbrains.buildServer.requirements.Requirement;
-import jetbrains.buildServer.requirements.RequirementType;
 import jetbrains.buildServer.serverSide.BuildFeature;
 import jetbrains.buildServer.serverSide.InvalidProperty;
 import jetbrains.buildServer.serverSide.PropertiesProcessor;
@@ -90,13 +88,6 @@ public class ScanFeature extends BuildFeature {
         result.put(Constants.FEATURE_SETTING_GENERATE_ANIMATED, "true");
         result.put(Constants.FEATURE_SETTING_FAIL_ON_ERROR, "false");
         return result;
-    }
-
-    @Override
-    public Collection<Requirement> getRequirements(Map<String, String> params) {
-        List<Requirement> reqs = new ArrayList<>();
-        reqs.add(new Requirement("image_conversion_tool", Constants.TOOL_IM_PATH_PARAM, null, RequirementType.EXISTS));
-        return reqs;
     }
     
     @Override

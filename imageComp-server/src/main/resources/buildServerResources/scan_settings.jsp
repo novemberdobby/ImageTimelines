@@ -9,12 +9,9 @@
 <c:set var="tag_name" value="<%=Constants.FEATURE_SETTING_TAG%>"/>
 <c:set var="diff_type" value="<%=Constants.FEATURE_SETTING_DIFF_METRIC%>"/>
 <c:set var="diff_type_default" value="<%=Constants.FEATURE_SETTING_DIFF_METRIC_DEFAULT%>"/>
-<c:set var="hidden_agent_req_im" value="<%=Constants.FEATURE_SETTING_HIDDEN_REQ_IM%>"/>
 <c:set var="generate_animated" value="<%=Constants.FEATURE_SETTING_GENERATE_ANIMATED%>"/>
 <c:set var="fail_on_problem" value="<%=Constants.FEATURE_SETTING_FAIL_ON_ERROR%>"/>
 <c:set var="artifact_popup_url" value="<%=Constants.FEATURE_ARTIFACTS_POPUP_URL%>"/>
-
-<c:set var="hidden_agent_req_im_value" value="<%=Constants.TOOL_IM_PATH_PARAM%>"/>
 
 <jsp:useBean id="buildForm" scope="request" type="jetbrains.buildServer.controllers.admin.projects.EditableBuildTypeSettingsForm"/>
 <jsp:useBean id="propertiesBean" scope="request" type="jetbrains.buildServer.controllers.BasePropertiesBean"/>
@@ -85,15 +82,6 @@
   </td>
 </tr>
 
-<%--
-  add a hidden property to reference a required tool. build feature requirements aren't enough to make an agent download the tool.
-  placed in a div to hide the params dropdown button
-  TODO: remove once https://youtrack.jetbrains.com/issue/TW-64761 is fixed
---%>
-<div style="display: none">
-  <props:textProperty name="${hidden_agent_req_im}" value="%${hidden_agent_req_im_value}%"/>
-</div>
-
 <tr class="advancedSetting">
   <th>Flicker:</th>
   <td>
@@ -127,8 +115,6 @@
         BS.Util.hide('imagecomp.type.custom.tag');
       }
       
-      //in case the value changes - re-set every time so worst case people only have to re-confirm their feature settings
-      $('${hidden_agent_req_im}').value = "%${hidden_agent_req_im_value}%";
       BS.MultilineProperties.updateVisible();
     },
 

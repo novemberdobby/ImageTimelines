@@ -11,6 +11,12 @@
             <outputDirectory>/</outputDirectory>
         </file>
     </files>
+    <fileSets>
+        <fileSet>
+            <directory>../imageComp-agent/ImageMagick</directory>
+            <outputDirectory>/ImageMagick</outputDirectory>
+        </fileSet>
+    </fileSets>
     <moduleSets>
         <moduleSet>
             <useAllReactorProjects>true</useAllReactorProjects>

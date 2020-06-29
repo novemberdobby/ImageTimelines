@@ -14,7 +14,6 @@ public class Constants {
     public static final String FEATURE_SETTING_TAG = "tag_name";
     public static final String FEATURE_SETTING_DIFF_METRIC = "diff_type";
     public static final String FEATURE_SETTING_DIFF_METRIC_DEFAULT = "dssim";
-    public static final String FEATURE_SETTING_HIDDEN_REQ_IM = "hidden_req_im";
     public static final String FEATURE_SETTING_GENERATE_ANIMATED = "generate_animated";
     public static final String FEATURE_SETTING_FAIL_ON_ERROR = "fail_on_error";
 
@@ -23,8 +22,6 @@ public class Constants {
 
     public static final String REDIRECT_TAB_ID = "build_to_type_redirect";
 	public static final String REDIRECT_TAB_JSP = "redirect_to_type_tab.jsp";
-
-    public static final String TOOL_IM_PATH_PARAM = "teamcity.tool.ImageMagick";
     
     public static final String ARTIFACTS_RESULT_PATH = "image_comparisons";
 

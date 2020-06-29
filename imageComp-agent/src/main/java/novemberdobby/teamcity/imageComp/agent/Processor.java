@@ -33,8 +33,7 @@ import jetbrains.buildServer.agent.AgentRunningBuild;
 import jetbrains.buildServer.agent.BuildAgentSystemInfo;
 import jetbrains.buildServer.agent.BuildFinishedStatus;
 import jetbrains.buildServer.agent.BuildProgressLogger;
-import jetbrains.buildServer.parameters.ProcessingResult;
-import jetbrains.buildServer.parameters.ValueResolver;
+import jetbrains.buildServer.agent.plugins.beans.PluginDescriptor;
 import jetbrains.buildServer.util.EventDispatcher;
 
 import novemberdobby.teamcity.imageComp.common.Constants;
@@ -43,7 +42,10 @@ import novemberdobby.teamcity.imageComp.common.DiffResult;
 
 public class Processor extends AgentLifeCycleAdapter {
     
-    public Processor(EventDispatcher<AgentLifeCycleListener> events) {
+    PluginDescriptor m_descriptor;
+
+    public Processor(EventDispatcher<AgentLifeCycleListener> events, PluginDescriptor descriptor) {
+        m_descriptor = descriptor;
         events.addListener(this);
     }
     
@@ -182,13 +184,6 @@ public class Processor extends AgentLifeCycleAdapter {
     boolean compare(AgentRunningBuild build, boolean problemOnError, Map<String, String> params, String artifactName, File referenceImage, String referenceVersion, File newImage) {
         BuildProgressLogger log = build.getBuildLogger();
         
-        ValueResolver resolvedParams = build.getSharedParametersResolver();
-        ProcessingResult resolveResult = resolvedParams.resolve("%" + Constants.TOOL_IM_PATH_PARAM + "%");
-        if(!resolveResult.isFullyResolved()) {
-            log.error("Couldn't find agent tool for comparison: " + resolveResult.getResult());
-            return false;
-        }
-        
         String blockMsg = String.format("Comparing '%s'", artifactName);
         log.activityStarted(blockMsg, "CUSTOM_IMAGE_COMP");
 
@@ -196,10 +191,10 @@ public class Processor extends AgentLifeCycleAdapter {
             File magick = null;
             BuildAgentSystemInfo agentInfo = build.getAgentConfiguration().getSystemInfo();
             if(agentInfo.isWindows()) {
-                magick = new File(resolveResult.getResult(), "windows\\magick.exe");
+                magick = new File(m_descriptor.getPluginRoot(), "ImageMagick\\windows\\magick.exe");
             }
             else if(agentInfo.isUnix()) {
-                magick = new File(resolveResult.getResult(), "unix/magick");
+                magick = new File(m_descriptor.getPluginRoot(), "ImageMagick/unix/magick");
             }
             else {
                 log.error("Unsupported OS");
