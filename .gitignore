@@ -30,3 +30,5 @@ imageComp-common/.settings/
 imageComp-common/.classpath
 
 imageComp-agent/.classpath
+
+*.code-workspace
