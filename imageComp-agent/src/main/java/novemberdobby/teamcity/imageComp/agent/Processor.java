@@ -63,7 +63,10 @@ public class Processor extends AgentLifeCycleAdapter {
                 String pathsParam = params.get(Constants.FEATURE_SETTING_ARTIFACTS);
                 boolean problemOnError = "true".equals(params.get(Constants.FEATURE_SETTING_FAIL_ON_ERROR));
 
-                //TODO: retry all 3 server requests X times to handle downtime
+                //TODO: link to the build it'll use in the feature dialog
+                //TODO: 'set new baseline' button on specific build
+                //TODO: generate thumbnails & show on page?
+                //TODO: retry all 3 server requests X times to handle downtime. internal prop with retry count?
                 //download artifacts from both builds to agent temp
                 Long refBuildID = -1L;
                 String refBuildNumber = "";
@@ -217,7 +220,6 @@ public class Processor extends AgentLifeCycleAdapter {
                 //don't try to write paths with ! in
                 File tempDiffImage = removeArchive(new File(diffImagesTemp, artPrefix + artifactNameDiff));
 
-                //TODO: diff images are coming out with non-255 alpha
                 //TODO: support tolerance aka -fuzz and make a note of what the value was (may as well record source build too if we're gonna do that, then remove ajax rq or use as a fallback)
                 //TODO: may as well publish another file to artifacts with info, can we use the same file for all this stuff? would need repeated publishes (risky)
 
@@ -271,7 +273,6 @@ public class Processor extends AgentLifeCycleAdapter {
         }
 
         return true;
-        //TODO: non-windows agent support
     }
 
     File removeArchive(File inputFile) {

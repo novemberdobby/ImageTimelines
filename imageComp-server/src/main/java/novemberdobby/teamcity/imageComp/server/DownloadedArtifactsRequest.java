@@ -36,6 +36,7 @@ public class DownloadedArtifactsRequest extends BaseController {
     @Override
     protected ModelAndView doHandle(HttpServletRequest request, HttpServletResponse response) throws Exception {
         
+        //TODO: are builds that get used for artifacts preserved past cleanup?
         SUser user = SessionUser.getUser(request);
 
         Long buildId = -1L;
