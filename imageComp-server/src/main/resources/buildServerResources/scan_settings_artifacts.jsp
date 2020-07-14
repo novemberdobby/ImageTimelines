@@ -19,7 +19,7 @@
       showToggleHidden: false,
       onSelect: function(path) {
         var ctl = $('${paths_list}');
-        ctl.value = ctl.value.trimEnd() + '\n' + path;
+        ctl.value = (ctl.value.trimEnd() + '\n' + path).trim();
       }
       });
     </c:otherwise>
