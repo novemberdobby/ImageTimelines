@@ -20,6 +20,9 @@ public class Constants {
     public static final String FEATURE_ARTIFACTS_POPUP_URL = "/imageCompArtifactsPopup.html";
     public static final String FEATURE_ARTIFACTS_POPUP_JSP = "scan_settings_artifacts.jsp";
 
+    public static final String FEATURE_GO_TO_BUILD_POPUP_URL = "/imageCompGoToBuild.html";
+    public static final String FEATURE_GO_TO_BUILD_POPUP_JSP = "go_to_build.jsp";
+
     public static final String REDIRECT_TAB_ID = "build_to_type_redirect";
 	public static final String REDIRECT_TAB_JSP = "redirect_to_type_tab.jsp";
     

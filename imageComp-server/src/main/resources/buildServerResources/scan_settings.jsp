@@ -12,6 +12,7 @@
 <c:set var="generate_animated" value="<%=Constants.FEATURE_SETTING_GENERATE_ANIMATED%>"/>
 <c:set var="fail_on_problem" value="<%=Constants.FEATURE_SETTING_FAIL_ON_ERROR%>"/>
 <c:set var="artifact_popup_url" value="<%=Constants.FEATURE_ARTIFACTS_POPUP_URL%>"/>
+<c:set var="go_to_build_popup_url" value="<%=Constants.FEATURE_GO_TO_BUILD_POPUP_URL%>"/>
 <c:set var="reference_build_url" value="<%=Constants.FEATURE_REFERENCE_BUILD_URL%>"/>
 
 <jsp:useBean id="buildForm" scope="request" type="jetbrains.buildServer.controllers.admin.projects.EditableBuildTypeSettingsForm"/>
@@ -25,7 +26,7 @@
       <props:option value="tagged">Last build with tag</props:option>
     </props:selectProperty>
     &nbsp;
-    <forms:button id="btnLaunchComparisonBuild" onclick="BS.ImageComparison.goToBuild()" className="btn btn_mini">&lt;- Go to</forms:button>
+    <forms:button id="btnLaunchComparisonBuild" onclick="BS.ImageComparison.goToBuild()" className="btn btn_mini">&lt;- Preview</forms:button>
   </td>
 </tr>
 
@@ -134,8 +135,19 @@
           {
             if(transport && transport.status == 200 && transport.responseText)
             {
-              alert(transport.responseText); //TODO popup with a link to it - NEW TAB
+              var comma = transport.responseText.indexOf(',');
+              var baselineId = transport.responseText.substring(0, comma);
               
+              if(BS.ImageComparison.GoToBuildPopup == undefined) {
+                BS.ImageComparison.GoToBuildPopup = new BS.Popup("icGoToBuildPopup", {
+                  hideOnMouseOut: false,
+                  hideOnMouseClickOutside: true,
+                  shift: {x: 0, y: 20},
+                  url: base_uri + "${go_to_build_popup_url}?buildId=" + baselineId
+                });
+              }
+
+              BS.ImageComparison.GoToBuildPopup.showPopupNearElement($('btnLaunchComparisonBuild'));
             }
             else
             {

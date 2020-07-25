@@ -9,4 +9,5 @@
        <bean class="novemberdobby.teamcity.imageComp.server.ReferencedBuildRequest"/>
        <bean class="novemberdobby.teamcity.imageComp.server.StandalonePage"/>
        <bean class="novemberdobby.teamcity.imageComp.server.ScanFeatureArtifacts"/>
+       <bean class="novemberdobby.teamcity.imageComp.server.ScanFeatureGoToBuild"/>
 </beans>

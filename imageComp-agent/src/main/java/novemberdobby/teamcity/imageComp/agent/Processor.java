@@ -58,7 +58,6 @@ public class Processor extends AgentLifeCycleAdapter {
                 String pathsParam = params.get(Constants.FEATURE_SETTING_ARTIFACTS);
                 boolean problemOnError = "true".equals(params.get(Constants.FEATURE_SETTING_FAIL_ON_ERROR));
 
-                //TODO: link to the build it'll use in the feature dialog
                 //TODO: 'set new baseline' button on specific build
                 //TODO: generate thumbnails & show on page?
                 //TODO: retry all 3 server requests X times to handle downtime. internal prop with retry count?
