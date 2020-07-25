@@ -26,9 +26,11 @@ import jetbrains.buildServer.web.openapi.WebControllerManager;
 import jetbrains.buildServer.web.util.SessionUser;
 import novemberdobby.teamcity.imageComp.common.Constants;
 
-//handle requests for "where did downloaded artifact X come from", which is stored in the DB (dbo.downloaded_artifacts) TODO update comment
-//this may break if people add artifact dependencies manually that have overlap with what
-//the agent-side feature downloads, but why would you do that
+/*handle requests with modes:
+  -"timeline": timeline view; query which build was the baseline (artifact specific)
+  -"process": agent-side diffing; query which build to use as the baseline
+  -"preview": feature settings dialog; query which build satisfies the criteria set in the dialog
+*/
 public class ReferencedBuildRequest extends BaseController {
 
     SBuildServer m_server;
