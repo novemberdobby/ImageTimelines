@@ -8,14 +8,14 @@
 <bs:externalPage>
   <jsp:attribute name="page_title">Image timelines - ${title}</jsp:attribute>
   <jsp:attribute name="body_include">
-    <c:set var="artifact_lookup_url" value="<%=Constants.ARTIFACT_LOOKUP_URL%>"/>
+    <c:set var="reference_build_url" value="<%=Constants.FEATURE_REFERENCE_BUILD_URL%>"/>
     <c:set var="artifact_results_path" value="<%=Constants.ARTIFACTS_RESULT_PATH%>"/>
     <c:set var="popout_url" value="<%=Constants.STANDALONE_PAGE_URL%>"/>
 
-    <script src="${resources}js/Chart.min.2_9_3.js"></script>
-    <script src="${resources}js/moment.min.2_24_0.js"></script>
-    <script src="${resources}js/imgslider.min.js"></script>
-    <link rel="stylesheet" type="text/css" href="${resources}css/imgslider.min.css">
+    <script src="${teamcityPluginResourcesPath}js/Chart.min.2_9_3.js"></script>
+    <script src="${teamcityPluginResourcesPath}js/moment.min.2_24_0.js"></script>
+    <script src="${teamcityPluginResourcesPath}js/imgslider.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="${teamcityPluginResourcesPath}css/imgslider.min.css">
 
     <style type="text/css">
     .icOption {
@@ -81,7 +81,7 @@
       <c:if test='${not external}'>
       <a href="${popout_url}?buildType=${buildTypeExtID}" id="img_comp_popout" target="_blank">
         <div class="icOption" style="width: auto;">New window<br>
-            <img src="${resources}popout.png" style="width: 20px;"/>
+            <img src="${teamcityPluginResourcesPath}popout.png" style="width: 20px;"/>
         </div>
       </a>
       </c:if>
@@ -411,9 +411,10 @@
           
           //TODO: test with various sized images & mismatched - same ratio & otherwise
           //get the build to compare against
-          BS.ajaxRequest(window['base_uri'] + '${artifact_lookup_url}', {
+          BS.ajaxRequest(window['base_uri'] + '${reference_build_url}', {
             method: "GET",
             parameters: {
+              'mode': 'timeline',
               'buildId': thisBuild.id,
               'artifact': artifact,
             },

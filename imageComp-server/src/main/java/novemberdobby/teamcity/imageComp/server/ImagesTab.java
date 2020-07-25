@@ -16,16 +16,13 @@ import novemberdobby.teamcity.imageComp.common.Constants;
 
 public class ImagesTab extends BuildTypeTab {
 
-    String m_resourcePath;
-
     public ImagesTab(WebControllerManager manager, ProjectManager projManager, PluginDescriptor descriptor) {
         super(Constants.TAB_ID, Constants.TAB_TITLE, manager, projManager, descriptor.getPluginResourcesPath(Constants.MAIN_JSP));
-        m_resourcePath = descriptor.getPluginResourcesPath();
     }
 
     @Override
     protected void fillModel(Map<String, Object> model, HttpServletRequest request, SBuildType buildType, SUser user) {
-        StandalonePage.populateModel(model, buildType, m_resourcePath, false);
+        StandalonePage.populateModel(model, buildType, false);
     }
 
     @Override

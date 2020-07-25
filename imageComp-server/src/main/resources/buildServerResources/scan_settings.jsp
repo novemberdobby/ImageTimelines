@@ -12,6 +12,7 @@
 <c:set var="generate_animated" value="<%=Constants.FEATURE_SETTING_GENERATE_ANIMATED%>"/>
 <c:set var="fail_on_problem" value="<%=Constants.FEATURE_SETTING_FAIL_ON_ERROR%>"/>
 <c:set var="artifact_popup_url" value="<%=Constants.FEATURE_ARTIFACTS_POPUP_URL%>"/>
+<c:set var="reference_build_url" value="<%=Constants.FEATURE_REFERENCE_BUILD_URL%>"/>
 
 <jsp:useBean id="buildForm" scope="request" type="jetbrains.buildServer.controllers.admin.projects.EditableBuildTypeSettingsForm"/>
 <jsp:useBean id="propertiesBean" scope="request" type="jetbrains.buildServer.controllers.BasePropertiesBean"/>
@@ -23,6 +24,8 @@
       <props:option value="last">Last build</props:option>
       <props:option value="tagged">Last build with tag</props:option>
     </props:selectProperty>
+    &nbsp;
+    <forms:button id="btnLaunchComparisonBuild" onclick="BS.ImageComparison.goToBuild()" className="btn btn_mini">&lt;- Go to</forms:button>
   </td>
 </tr>
 
@@ -47,7 +50,7 @@
     </div>
 
     <select id="diff_type_multi" multiple="true" onchange="BS.ImageComparison.saveDiffTypes()">
-      <option value="ae">AE - absolute error count, number of different pixels (-fuzz affected)</option>
+      <option value="ae">AE - absolute error count, number of different pixels (affected by fuzz)</option>
       <option value="dssim">DSSIM - structural dissimilarity index</option>
       <option value="fuzz">FUZZ - mean color distance</option>
       <option value="mae">MAE - mean absolute error (normalized), average channel error distance</option>
@@ -116,6 +119,30 @@
       }
       
       BS.MultilineProperties.updateVisible();
+    },
+
+    goToBuild: function() {
+      BS.ajaxRequest(window['base_uri'] + '${reference_build_url}', {
+          method: "GET",
+          parameters: {
+            'mode': 'preview',
+            'buildTypeId': '${buildForm.externalId}',
+            '${compare_type}': $('${compare_type}').value,
+            'tag': $('${tag_name}').value
+          },
+          onComplete: function(transport)
+          {
+            if(transport && transport.status == 200 && transport.responseText)
+            {
+              alert(transport.responseText); //TODO popup with a link to it - NEW TAB
+              
+            }
+            else
+            {
+              alert("Failed to find a suitable build");
+            }
+          }
+        });
     },
 
     loadDiffTypes: function() {

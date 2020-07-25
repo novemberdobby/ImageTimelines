@@ -122,12 +122,18 @@ public class ScanFeature extends BuildFeature {
                 result.add(new InvalidProperty(Constants.FEATURE_SETTING_ARTIFACTS, "Paths list cannot be empty"));
             }
 
-            //check tag, note that this doesn't guarantee it'll be valid
-            if("tagged".equals(params.get(Constants.FEATURE_SETTING_COMPARE_TYPE))) {
+            String compareType = params.get(Constants.FEATURE_SETTING_COMPARE_TYPE);
+            if("last".equals(compareType)) {
+
+            }
+            else if("tagged".equals(compareType)) { //check tag, note that this doesn't guarantee it'll be valid
                 String tag = params.get(Constants.FEATURE_SETTING_TAG);
                 if(tag == null || tag.length() == 0 || tag.contains(" ")) {
                     result.add(new InvalidProperty(Constants.FEATURE_SETTING_TAG, "Invalid tag - must be a valid string with no spaces"));
                 }
+            }
+            else {
+                result.add(new InvalidProperty(Constants.FEATURE_SETTING_TAG, String.format("Unknown comparison type '%s'", compareType)));
             }
 
             String diffMetric = params.get(Constants.FEATURE_SETTING_DIFF_METRIC);

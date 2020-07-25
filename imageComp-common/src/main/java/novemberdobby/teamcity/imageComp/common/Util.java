@@ -1,12 +1,15 @@
 package novemberdobby.teamcity.imageComp.common;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -39,6 +42,19 @@ public class Util {
         URLConnection connection = urlObj.openConnection();
         connection.setRequestProperty("Authorization", authStr);
         return connection;
+    }
+
+    public static List<String> webRequestLines(String url, String user, String pass) throws IOException {
+        URLConnection connection = webRequest(url, user, pass);
+
+        List<String> result = new ArrayList<String>();
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
+            while(reader.ready()) {
+                result.add(reader.readLine());
+            }
+        }
+
+        return result;
     }
 
     public static void downloadFile(URLConnection connection, File saveToFile) throws IOException {

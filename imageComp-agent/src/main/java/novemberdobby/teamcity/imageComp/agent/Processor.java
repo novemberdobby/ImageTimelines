@@ -12,10 +12,6 @@ import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathFactory;
-
 import com.intellij.openapi.util.Pair;
 
 import org.apache.commons.exec.CommandLine;
@@ -23,7 +19,6 @@ import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.exec.ExecuteWatchdog;
 import org.apache.commons.exec.PumpStreamHandler;
 import org.apache.commons.io.FilenameUtils;
-import org.w3c.dom.Document;
 
 import jetbrains.buildServer.BuildProblemData;
 import jetbrains.buildServer.agent.AgentBuildFeature;
@@ -67,28 +62,32 @@ public class Processor extends AgentLifeCycleAdapter {
                 //TODO: 'set new baseline' button on specific build
                 //TODO: generate thumbnails & show on page?
                 //TODO: retry all 3 server requests X times to handle downtime. internal prop with retry count?
+
                 //download artifacts from both builds to agent temp
                 Long refBuildID = -1L;
                 String refBuildNumber = "";
                 if(pathsParam != null) {
                     String serverUrl = build.getAgentConfiguration().getServerUrl();
-                    String buildIntId = build.getBuildTypeId(); //resist external ID changes
-                    String restrict = "";
 
-                    if("tagged".equals(params.get(Constants.FEATURE_SETTING_COMPARE_TYPE))) {
-                        restrict = String.format(",tag:%s", params.get(Constants.FEATURE_SETTING_TAG));
-                    }
+                    //TODO: escape tag
+                    String infoUrl = String.format("%s%s?mode=process&buildTypeId=%s&%s=%s&tag=%s", serverUrl, Constants.FEATURE_REFERENCE_BUILD_URL,
+                        build.getBuildTypeExternalId(), Constants.FEATURE_SETTING_COMPARE_TYPE, params.get(Constants.FEATURE_SETTING_COMPARE_TYPE), params.get(Constants.FEATURE_SETTING_TAG));
 
-                    String infoUrl = String.format("%s/httpAuth/app/rest/builds?locator=buildType(internalId:%s),count:1%s", serverUrl, buildIntId, restrict);
-                    
                     try {
-                        Document buildsDoc = Util.getRESTdocument(infoUrl, build.getAccessUser(), build.getAccessCode());
-                        XPath xpath = XPathFactory.newInstance().newXPath();
-                        refBuildID = Long.parseLong((String)xpath.evaluate("/builds/build/@id", buildsDoc, XPathConstants.STRING));
-                        refBuildNumber = (String)xpath.evaluate("/builds/build/@number", buildsDoc, XPathConstants.STRING);
+                        List<String> resultStr = Util.webRequestLines(infoUrl, build.getAccessUser(), build.getAccessCode());
+                        if(resultStr.size() == 1) {
+                            String result = resultStr.get(0);
+                            int comma = result.indexOf(',');
+                            refBuildID = Long.parseLong(result.substring(0, comma));
+                            refBuildNumber = result.substring(comma + 1);
+                        }
+                        
                     } catch (Throwable e) {
                         logError(log, problemOnError, "Couldn't find a suitable build to compare images against");
                         log.error(e.toString());
+                        for (StackTraceElement st : e.getStackTrace()) {
+                            log.error(st.toString());
+                        }
                     }
                     
                     File tempDir = new File(build.getBuildTempDirectory(), "image_comp_sources");

@@ -46,15 +46,14 @@ public class StandalonePage extends BaseController {
             return null;
         }
 
-        populateModel(model, buildType, m_descriptor.getPluginResourcesPath(), true);
+        populateModel(model, buildType, true);
         return mv;
     }
     
-    public static void populateModel(Map<String, Object> model, BuildType buildType, String resourcePath, boolean externalPage) {
+    public static void populateModel(Map<String, Object> model, BuildType buildType, boolean externalPage) {
 
         model.put("external", externalPage);
         model.put("title", buildType.getFullName());
-        model.put("resources", resourcePath);
         model.put("buildTypeIntID", buildType.getBuildTypeId());
         model.put("buildTypeExtID", buildType.getExternalId());
         model.put("projectIntId", buildType.getProjectId());

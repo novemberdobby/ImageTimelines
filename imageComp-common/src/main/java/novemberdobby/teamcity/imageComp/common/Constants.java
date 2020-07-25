@@ -25,6 +25,6 @@ public class Constants {
     
     public static final String ARTIFACTS_RESULT_PATH = "image_comparisons";
 
-    public static final String ARTIFACT_LOOKUP_URL = "/image_comp_query_artifacts.html";
     public static final String STANDALONE_PAGE_URL = "/image_timelines.html";
+    public static final String FEATURE_REFERENCE_BUILD_URL = "/image_timeline_reference.html";
 }
