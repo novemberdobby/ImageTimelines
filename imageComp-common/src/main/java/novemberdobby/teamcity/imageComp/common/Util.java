@@ -11,11 +11,11 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import javax.xml.bind.DatatypeConverter;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
@@ -37,7 +37,7 @@ public class Util {
         URL urlObj = new URL(url);
 
         String creds = String.format("%s:%s", user, pass);
-        String authStr = String.format("Basic %s", DatatypeConverter.printBase64Binary(creds.getBytes()));
+        String authStr = String.format("Basic %s", Base64.getEncoder().encodeToString(creds.getBytes()));
         
         URLConnection connection = urlObj.openConnection();
         connection.setRequestProperty("Authorization", authStr);

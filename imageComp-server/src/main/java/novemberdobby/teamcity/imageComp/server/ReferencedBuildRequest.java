@@ -2,6 +2,7 @@ package novemberdobby.teamcity.imageComp.server;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.regex.Matcher;
@@ -9,7 +10,6 @@ import java.util.regex.Pattern;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.xml.bind.DatatypeConverter;
 
 import org.springframework.web.servlet.ModelAndView;
 
@@ -58,7 +58,7 @@ public class ReferencedBuildRequest extends BaseController {
         if(auth != null && auth.startsWith("Basic ")) {
             auth = auth.substring("Basic ".length());
             try {
-                auth = new String(DatatypeConverter.parseBase64Binary(auth));
+                auth = new String(Base64.getDecoder().decode(auth));
             } catch (IllegalArgumentException e) {
                 return false;
             }
