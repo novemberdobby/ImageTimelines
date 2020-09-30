@@ -119,8 +119,8 @@ public class Processor extends AgentLifeCycleAdapter {
                                 String refDownloadUrl = String.format("%s/httpAuth/app/rest/builds/%s/artifacts/content/%s", serverUrl, refBuildID, artifact);
                                 String newDownloadUrl = String.format("%s/httpAuth/app/rest/builds/%s/artifacts/content/%s", serverUrl, build.getBuildId(), artifact);
 
-                                log.message(String.format("%s to %s", refDownloadUrl, refTarget.getAbsolutePath()));
-                                log.message(String.format("%s to %s", newDownloadUrl, newTarget.getAbsolutePath()));
+                                log.message(String.format("%s (build #%s) -> %s", refDownloadUrl, refBuildNumber, refTarget.getAbsolutePath()));
+                                log.message(String.format("%s (this build - #%s) -> %s", newDownloadUrl, build.getBuildNumber(), newTarget.getAbsolutePath()));
 
                                 try {
                                     URLConnection refConn = Util.webRequest(refDownloadUrl, build.getAccessUser(), build.getAccessCode());
