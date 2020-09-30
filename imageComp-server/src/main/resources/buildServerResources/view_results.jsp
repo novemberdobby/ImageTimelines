@@ -363,7 +363,7 @@
           }
           var colourLerp = function(a, b, c) { return "rgba(" + lerp(a[0], b[0], c) + "," + lerp(a[1], b[1], c) + "," + lerp(a[2], b[2], c) + "," + lerp(a[3], b[3], c) + ")" }
 
-          BS.ImageCompResults.Chart.data.labels = target.map(d => d.number);
+          BS.ImageCompResults.Chart.data.labels = target.map(d => "#" + d.number);
           BS.ImageCompResults.Chart.data.datasets = [{
               label: targetMetric,
               data: values,
