@@ -89,7 +89,7 @@
       <div style="margin-left: auto; padding: 1em;">
         <forms:button onclick="BS.ImageCompResults.createStatsGraph(false)" title="Create a graph on the build type's statistics page">Graph (build type)</forms:button>
         <forms:button onclick="BS.ImageCompResults.createStatsGraph(true)" title="Create a graph on the parent project's statistics page">Graph (parent project)</forms:button>
-        <forms:button onclick="BS.ImageCompResults.setNewBaseline()" title="Set current (right) build as new baseline" id="img_comp_set_new_baseline">Set new baseline</forms:button> <%-- TODO clicking this sometimes empties all the dropdowns and breaks stuff --%>
+        <forms:button onclick="BS.ImageCompResults.setNewBaseline()" title="Set current (right) build as new baseline" id="img_comp_set_new_baseline">Set new baseline</forms:button>
         <forms:saving id="createGraphProgress"/>
       </div>
     </div>
@@ -615,6 +615,11 @@
         var artifact = newParams.get("ic_artifact");
         var metric = newParams.get("ic_metric");
         var view_mode = newParams.get("ic_view_mode");
+
+        if(count == undefined)
+        {
+          return;
+        }
 
         var doFullRefresh = $('img_comp_opt_count').value != count;
         var artChange = $('img_comp_opt_artifact').value != artifact;
