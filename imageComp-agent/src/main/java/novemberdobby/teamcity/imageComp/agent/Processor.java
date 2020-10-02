@@ -58,7 +58,6 @@ public class Processor extends AgentLifeCycleAdapter {
                 String pathsParam = params.get(Constants.FEATURE_SETTING_ARTIFACTS);
                 boolean problemOnError = "true".equals(params.get(Constants.FEATURE_SETTING_FAIL_ON_ERROR));
 
-                //TODO: 'set new baseline' button on specific build
                 //TODO: generate thumbnails & show on page?
                 //TODO: retry all 3 server requests X times to handle downtime. internal prop with retry count?
 
@@ -69,8 +68,11 @@ public class Processor extends AgentLifeCycleAdapter {
                     String serverUrl = build.getAgentConfiguration().getServerUrl();
 
                     //TODO: escape tag
-                    String infoUrl = String.format("%s%s?mode=process&buildTypeId=%s&%s=%s&tag=%s", serverUrl, Constants.FEATURE_REFERENCE_BUILD_URL,
-                        build.getBuildTypeExternalId(), Constants.FEATURE_SETTING_COMPARE_TYPE, params.get(Constants.FEATURE_SETTING_COMPARE_TYPE), params.get(Constants.FEATURE_SETTING_TAG));
+                    String infoUrl = String.format("%s%s?mode=process&buildTypeId=%s&%s=%s&%s=%s&%s=%s", serverUrl, Constants.FEATURE_REFERENCE_BUILD_URL,
+                        build.getBuildTypeExternalId(),
+                        Constants.FEATURE_SETTING_COMPARE_TYPE, params.get(Constants.FEATURE_SETTING_COMPARE_TYPE),
+                        Constants.FEATURE_SETTING_TAG, params.get(Constants.FEATURE_SETTING_TAG),
+                        Constants.FEATURE_SETTING_BUILD_ID, params.get(Constants.FEATURE_SETTING_BUILD_ID));
 
                     try {
                         List<String> resultStr = Util.webRequestLines(infoUrl, build.getAccessUser(), build.getAccessCode());

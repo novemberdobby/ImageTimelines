@@ -3,7 +3,7 @@
   <info>
     <name>imageComp</name>
     <display-name>Image Timelines</display-name>
-    <version>0.2</version>
+    <version>0.3</version>
     <description>Compare images in artifacts of previous builds</description>
     <download-url>-</download-url>
     <email>novemberdobby@gmail.com</email>

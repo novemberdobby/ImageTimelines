@@ -10,8 +10,9 @@ public class Constants {
     public static final String FEATURE_DISPLAY_NAME = "Image timelines";
     public static final String FEATURE_TYPE_ID = "image_comp_feature";
     public static final String FEATURE_SETTING_ARTIFACTS = "artifact_paths";
-    public static final String FEATURE_SETTING_COMPARE_TYPE = "compare_with";
+    public static final String FEATURE_SETTING_COMPARE_TYPE = "compare_type";
     public static final String FEATURE_SETTING_TAG = "tag_name";
+	public static final String FEATURE_SETTING_BUILD_ID = "build_id";
     public static final String FEATURE_SETTING_DIFF_METRIC = "diff_type";
     public static final String FEATURE_SETTING_DIFF_METRIC_DEFAULT = "dssim";
     public static final String FEATURE_SETTING_GENERATE_ANIMATED = "generate_animated";

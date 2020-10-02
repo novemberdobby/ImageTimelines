@@ -7,6 +7,7 @@
 <c:set var="paths_list" value="<%=Constants.FEATURE_SETTING_ARTIFACTS%>"/>
 <c:set var="compare_type" value="<%=Constants.FEATURE_SETTING_COMPARE_TYPE%>"/>
 <c:set var="tag_name" value="<%=Constants.FEATURE_SETTING_TAG%>"/>
+<c:set var="baseline_build_id" value="<%=Constants.FEATURE_SETTING_BUILD_ID%>"/>
 <c:set var="diff_type" value="<%=Constants.FEATURE_SETTING_DIFF_METRIC%>"/>
 <c:set var="diff_type_default" value="<%=Constants.FEATURE_SETTING_DIFF_METRIC_DEFAULT%>"/>
 <c:set var="generate_animated" value="<%=Constants.FEATURE_SETTING_GENERATE_ANIMATED%>"/>
@@ -24,6 +25,7 @@
     <props:selectProperty name="${compare_type}" onchange="BS.ImageComparison.onComparisonTypeChange()">
       <props:option value="last">Last build</props:option>
       <props:option value="tagged">Last build with tag</props:option>
+      <props:option value="buildId">Build with ID</props:option>
     </props:selectProperty>
     &nbsp;
     <forms:button id="btnLaunchComparisonBuild" onclick="BS.ImageComparison.goToBuild()" className="btn btn_mini">&lt;- Preview</forms:button>
@@ -35,6 +37,14 @@
   <td>
     <props:textProperty name="${tag_name}" className="disableBuildTypeParams"/>
     <span class="error" id="error_${tag_name}"></span>
+  </td>
+</tr>
+
+<tr class="noBorder" id="imagecomp.type.custom.build_id" style="display: none">
+  <th>Baseline build ID:</th>
+  <td>
+    <props:textProperty name="${baseline_build_id}" className="disableBuildTypeParams"/>
+    <span class="error" id="error_${baseline_build_id}"></span>
   </td>
 </tr>
 
@@ -110,14 +120,11 @@
       var typeElem = $('${compare_type}');
       var typeValue = typeElem.options[typeElem.selectedIndex].value;
       
-      if(typeValue == "tagged")
-      {
-        BS.Util.show('imagecomp.type.custom.tag');
-      }
-      else
-      {
-        BS.Util.hide('imagecomp.type.custom.tag');
-      }
+      if(typeValue == "tagged") BS.Util.show('imagecomp.type.custom.tag');
+      else BS.Util.hide('imagecomp.type.custom.tag');
+
+      if(typeValue == "buildId") BS.Util.show('imagecomp.type.custom.build_id');
+      else BS.Util.hide('imagecomp.type.custom.build_id');
       
       BS.MultilineProperties.updateVisible();
     },
@@ -129,7 +136,8 @@
             'mode': 'preview',
             'buildTypeId': '${buildForm.externalId}',
             '${compare_type}': $('${compare_type}').value,
-            'tag': $('${tag_name}').value
+            '${tag_name}': $('${tag_name}').value,
+            '${baseline_build_id}': $('${baseline_build_id}').value,
           },
           onComplete: function(transport)
           {
@@ -138,14 +146,16 @@
               var comma = transport.responseText.indexOf(',');
               var baselineId = transport.responseText.substring(0, comma);
               
-              if(BS.ImageComparison.GoToBuildPopup == undefined) {
-                BS.ImageComparison.GoToBuildPopup = new BS.Popup("icGoToBuildPopup", {
-                  hideOnMouseOut: false,
-                  hideOnMouseClickOutside: true,
-                  shift: {x: 0, y: 20},
-                  url: base_uri + "${go_to_build_popup_url}?buildId=" + baselineId
-                });
+              if(BS.ImageComparison.GoToBuildPopup != undefined) {
+                BS.ImageComparison.GoToBuildPopup.hidePopup();
               }
+
+              BS.ImageComparison.GoToBuildPopup = new BS.Popup("icGoToBuildPopup", {
+                hideOnMouseOut: false,
+                hideOnMouseClickOutside: true,
+                shift: {x: 0, y: 20},
+                url: base_uri + "${go_to_build_popup_url}?buildId=" + baselineId
+              });
 
               BS.ImageComparison.GoToBuildPopup.showPopupNearElement($('btnLaunchComparisonBuild'));
             }

@@ -89,6 +89,7 @@
       <div style="margin-left: auto; padding: 1em;">
         <forms:button onclick="BS.ImageCompResults.createStatsGraph(false)" title="Create a graph on the build type's statistics page">Graph (build type)</forms:button>
         <forms:button onclick="BS.ImageCompResults.createStatsGraph(true)" title="Create a graph on the parent project's statistics page">Graph (parent project)</forms:button>
+        <forms:button onclick="BS.ImageCompResults.setNewBaseline()" title="Set current (right) build as new baseline" id="img_comp_set_new_baseline">Set new baseline</forms:button> <%-- TODO clicking this sometimes empties all the dropdowns and breaks stuff --%>
         <forms:saving id="createGraphProgress"/>
       </div>
     </div>
@@ -400,6 +401,8 @@
         },
         
         updateView: function() {
+          $('img_comp_set_new_baseline').style.display = (BS.ImageCompResults.SelectedIndex == -1) ? "none" : "";
+
           if(BS.ImageCompResults.SelectedIndex == -1 || BS.ImageCompResults.CurrentChartData == undefined) {
             return;
           }
@@ -568,6 +571,31 @@
                 }
             }
           });
+        },
+
+        setNewBaseline() {
+          if(BS.ImageCompResults.SelectedIndex != -1) {
+            var currentBuild = BS.ImageCompResults.CurrentChartData[BS.ImageCompResults.SelectedIndex];
+
+            BS.ajaxRequest(window['base_uri'] + '${reference_build_url}', {
+              method: "POST",
+              parameters: {
+                'mode': 'update_baseline',
+                'buildId': currentBuild.id,
+                'artifact': $('img_comp_opt_artifact').value,
+              },
+              onComplete: function(transport) {
+                if(transport.status == 200)
+                {
+                  alert(transport.responseText);
+                }
+                else
+                {
+                  alert("Failed to set new baseline image (code " + transport.status + ")");
+                }
+              }
+            });
+          }
         }
       };
 

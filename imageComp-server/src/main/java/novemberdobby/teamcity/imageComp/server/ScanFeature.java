@@ -14,6 +14,7 @@ import java.util.List;
 import jetbrains.buildServer.serverSide.BuildFeature;
 import jetbrains.buildServer.serverSide.InvalidProperty;
 import jetbrains.buildServer.serverSide.PropertiesProcessor;
+import jetbrains.buildServer.serverSide.SBuildServer;
 import jetbrains.buildServer.web.openapi.PluginDescriptor;
 
 import novemberdobby.teamcity.imageComp.common.Constants;
@@ -22,11 +23,13 @@ import novemberdobby.teamcity.imageComp.common.Util;
 public class ScanFeature extends BuildFeature {
 
     private String m_jspPath;
+    private SBuildServer m_server;
     
     //TODO: option to arbitrarily compare builds, requires comparison on the server (slow, need to restrict)
     //TODO: dedicated project tab that supports many build types too?
     
-    public ScanFeature(PluginDescriptor descriptor) {
+    public ScanFeature(PluginDescriptor descriptor, SBuildServer server) {
+        m_server = server;
         m_jspPath = descriptor.getPluginResourcesPath(Constants.FEATURE_SETTINGS_JSP);
     }
     
@@ -56,9 +59,14 @@ public class ScanFeature extends BuildFeature {
         StringBuilder sb = new StringBuilder();
         String paths = params.get(Constants.FEATURE_SETTING_ARTIFACTS);
         
-        sb.append("Generate comparisons to the last finished build");
-        if("tagged".equals(params.get(Constants.FEATURE_SETTING_COMPARE_TYPE))) {
-            sb.append(String.format(" with tag '%s'", params.get(Constants.FEATURE_SETTING_TAG)));
+        sb.append("Generate comparisons to the ");
+        String compareType = params.get(Constants.FEATURE_SETTING_COMPARE_TYPE);
+        if("last".equals(compareType)) {
+            sb.append("last finished build");
+        } else if("tagged".equals(compareType)) {
+            sb.append(String.format("last finished build with tag '%s'", params.get(Constants.FEATURE_SETTING_TAG)));
+        } else if("buildId".equals(compareType)) {
+            sb.append(String.format("build with ID %s", params.get(Constants.FEATURE_SETTING_BUILD_ID)));
         }
         
         sb.append(" for:\r\n");
@@ -92,11 +100,17 @@ public class ScanFeature extends BuildFeature {
     
     @Override
     public PropertiesProcessor getParametersProcessor() {
-        return new FeatureValidator();
+        return new FeatureValidator(m_server);
     }
 
     static class FeatureValidator implements PropertiesProcessor {
         
+        SBuildServer m_server;
+
+        public FeatureValidator(SBuildServer server) {
+            m_server = server;
+        }
+
         @Override
         public Collection<InvalidProperty> process(Map<String, String> params) {
             
@@ -132,12 +146,23 @@ public class ScanFeature extends BuildFeature {
                     result.add(new InvalidProperty(Constants.FEATURE_SETTING_TAG, "Invalid tag - must be a valid string with no spaces"));
                 }
             }
+            else if("buildId".equals(compareType)) { //check baseline build currently exists
+                String buildIdStr = params.get(Constants.FEATURE_SETTING_BUILD_ID);
+                Long buildId = -1L;
+                try {
+                    buildId = Long.parseLong(buildIdStr);
+                } catch (NumberFormatException e) { }
+
+                if(m_server.findBuildInstanceById(buildId) == null) {
+                    result.add(new InvalidProperty(Constants.FEATURE_SETTING_BUILD_ID, String.format("Unknown baseline build '%s'", buildIdStr)));
+                }
+            }
             else {
                 result.add(new InvalidProperty(Constants.FEATURE_SETTING_TAG, String.format("Unknown comparison type '%s'", compareType)));
             }
 
             String diffMetric = params.get(Constants.FEATURE_SETTING_DIFF_METRIC);
-            if(diffMetric == null || diffMetric == "") {
+            if(diffMetric == null || diffMetric.equals("")) {
                 result.add(new InvalidProperty(Constants.FEATURE_SETTING_DIFF_METRIC, "One or more diff metrics must be selected"));
             }
 

@@ -2,8 +2,11 @@ package novemberdobby.teamcity.imageComp.server;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Arrays;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -17,6 +20,7 @@ import jetbrains.buildServer.Build;
 import jetbrains.buildServer.controllers.BaseController;
 import jetbrains.buildServer.serverSide.ArtifactInfo;
 import jetbrains.buildServer.serverSide.SBuild;
+import jetbrains.buildServer.serverSide.SBuildFeatureDescriptor;
 import jetbrains.buildServer.serverSide.SBuildServer;
 import jetbrains.buildServer.serverSide.SBuildType;
 import jetbrains.buildServer.serverSide.auth.Permission;
@@ -53,7 +57,7 @@ public class ReferencedBuildRequest extends BaseController {
         //if user is null but we're still handling the request, they must have authenticated correctly.
         //one case where that's possible is a transient access user valid while the build is running,
         //so check if the username matches a build of the build type we're dealing with.
-        //TODO there must be a nicer way to do this!
+        //TODO there must be a nicer way to do this! put in a feature request
         String auth = request.getHeader("authorization");
         if(auth != null && auth.startsWith("Basic ")) {
             auth = auth.substring("Basic ".length());
@@ -82,79 +86,143 @@ public class ReferencedBuildRequest extends BaseController {
         String mode = request.getParameter("mode");
         if (mode != null) {
 
-            switch (mode.toLowerCase()) {
-                case "preview":
-                case "process":
-                    String buildTypeStr = request.getParameter("buildTypeId");
-                    SBuildType buildType = m_server.getProjectManager().findBuildTypeByExternalId(buildTypeStr);
+            if(request.getMethod().equals("GET")) {
+                switch (mode.toLowerCase()) {
+                    case "preview":
+                    case "process":
+                    {
+                        SBuildType buildType = getBuildType(request);
+                        if(buildType == null || !hasPermission(request, buildType)) {
+                            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid build type or no permission to view");
+                            return null;
+                        }
+                        
+                        Build targetBuild = null;
+                        String compareType = request.getParameter(Constants.FEATURE_SETTING_COMPARE_TYPE);
+                        switch(compareType) {
+                            case "tagged":
+                                String tagName = request.getParameter(Constants.FEATURE_SETTING_TAG);
+                                if(tagName != null && tagName.length() > 0) {
+                                    List<Build> taggedList = m_tagsManager.findAll(tagName, buildType);
+                                    for (Build tagged : taggedList) {
+                                        if(tagged.isFinished() && !tagged.isPersonal() && tagged.getCanceledInfo() == null) {
+                                            targetBuild = tagged;
+                                            break;
+                                        }
+                                    }
+                                }
+                                break;
+            
+                            case "last":
+                                targetBuild = buildType.getLastChangesFinished();
+                                break;
 
-                    if(buildType == null || !hasPermission(request, buildType)) {
-                        response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid build type or no permission to view");
+                            case "buildId":
+                                targetBuild = getBuild(request, Constants.FEATURE_SETTING_BUILD_ID);
+                                break;
+                        }
+                        
+                        if(targetBuild != null) {
+                            writeBuild(response, targetBuild);
+                        } else {
+                            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid request");
+                        }
+                        
                         return null;
                     }
-                    
-                    Build targetBuild = null;
-                    String compareType = request.getParameter(Constants.FEATURE_SETTING_COMPARE_TYPE);
-                    switch(compareType) {
-                        case "tagged":
-                            List<Build> taggedList = m_tagsManager.findAll(request.getParameter("tag"), buildType);
-                            for (Build tagged : taggedList) {
-                                if(tagged.isFinished() && !tagged.isPersonal() && tagged.getCanceledInfo() == null) {
-                                    targetBuild = tagged;
+
+                    case "timeline": //find out which build we downloaded artifacts from
+                    {
+                        SBuild build = getBuild(request);
+                        if(build == null) {
+                            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid build ID");
+                            return null;
+                        }
+                        
+                        SBuildType buildType = build.getBuildType();
+                        if(buildType == null || !hasPermission(request, buildType)) {
+                            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid build type or no permission to view");
+                            return null;
+                        }
+                
+                        String artifact = request.getParameter("artifact");
+                        
+                        for (Entry<Build, List<ArtifactInfo>> sourceBuild : build.getDownloadedArtifacts().getArtifacts().entrySet()) {
+
+                            //for each comparison, a build downloads artifacts from two jobs: itself and the baseline. disregard self!
+                            if(sourceBuild.getKey() == build) {
+                                continue;
+                            }
+
+                            for (ArtifactInfo art : sourceBuild.getValue()) {
+                                if(artifact.equals(art.getArtifactPath())) {
+                                    writeBuild(response, sourceBuild.getKey());
+                                    return null;
+                                }
+                            }
+                        }
+                        
+                        //404 for artifact not found
+                        response.sendError(HttpServletResponse.SC_NOT_FOUND, "Couldn't find source build for artifact");
+                        return null;
+                    }
+                }
+            } else if(request.getMethod().equals("POST")) {
+                switch(mode.toLowerCase()) {
+                    case "update_baseline":
+                    {
+                        SBuild targetBuild = getBuild(request);
+                        if(targetBuild == null || targetBuild.getBuildType() == null || !hasPermission(request, targetBuild.getBuildType())) {
+                            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid build or no permission to view");
+                            return null;
+                        }
+
+                        SBuildType config = targetBuild.getBuildType();
+
+                        //find the first feature which compares the selected artifact
+                        String targetArtifact = request.getParameter("artifact");
+                        for (SBuildFeatureDescriptor feature : config.getBuildFeaturesOfType(Constants.FEATURE_TYPE_ID)) {
+                            Map<String, String> params = feature.getParameters();
+                            boolean updateThisFeature = false;
+
+                            String artifactsParam = params.get(Constants.FEATURE_SETTING_ARTIFACTS);
+                            List<String> artifacts = Arrays.asList(artifactsParam.split("[\n\r]"));
+                            for(String artifact : artifacts) {
+                                if(targetArtifact.equalsIgnoreCase(artifact)) {
+                                    updateThisFeature = true;
                                     break;
                                 }
                             }
-                            break;
-        
-                        case "last":
-                            targetBuild = buildType.getLastChangesFinished();
-                            break;
-                    }
-                    
-                    if(targetBuild != null) {
-                        writeBuild(response, targetBuild);
-                        return null;
-                    }
-                    
-                    response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid request");
-                    return null;
 
-                case "timeline": //find out which build we downloaded artifacts from
-                    Long buildId = -1L;
-                    try {
-                        buildId = Long.parseLong(request.getParameter("buildId"));
-                    } catch (Exception e) { }
-            
-                    SBuild build = m_server.findBuildInstanceById(buildId);
-                    if(build == null) {
-                        response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid build ID");
-                        return null;
-                    }
-            
-                    SBuildType type = build.getBuildType();
-                    if(type == null || !hasPermission(request, type)) {
-                        response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid build type or no permission to view");
-                        return null;
-                    }
-            
-                    String artifact = request.getParameter("artifact");
-                    
-                    for (Entry<Build, List<ArtifactInfo>> sourceBuild : build.getDownloadedArtifacts().getArtifacts().entrySet()) {
-                        for (ArtifactInfo art : sourceBuild.getValue()) {
-                            if(artifact.equals(art.getArtifactPath())) {
-                                writeBuild(response, sourceBuild.getKey());
-                                return null;
+                            if(updateThisFeature) {
+                                response.setContentType("text/plain");
+                                PrintWriter writer = response.getWriter();
+                                params = new HashMap<String, String>(params); //writeable
+                                params.put(Constants.FEATURE_SETTING_BUILD_ID, Long.toString(targetBuild.getBuildId()));
+                                String oldCompareType = params.put(Constants.FEATURE_SETTING_COMPARE_TYPE, "buildId");
+
+                                if(params.equals(feature.getParameters())) {
+                                    writer.write("Nothing to update.");
+                                } else {
+                                    config.updateBuildFeature(feature.getId(), Constants.FEATURE_TYPE_ID, params);
+                                    config.persist(); //logged as build_type_edit_settings by the correct user
+                                    writer.write(String.format("Successfully set baseline image to build ID %s (#%s)", targetBuild.getBuildId(), targetBuild.getBuildNumber()));
+                                    if(oldCompareType == null || !oldCompareType.equals("buildId")) {
+                                        writer.write("\n(comparisons were not previously using a specific build ID, this also has been changed)");
+                                    }
+                                }
+
+                                break;
                             }
                         }
+
+                        return null;
                     }
-                    
-                    //404 for artifact not found
-                    response.sendError(HttpServletResponse.SC_NOT_FOUND, "Couldn't find source build for artifact");
-                    return null;
+                }
             }
         }
 
-        response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Mode must be 'process', 'preview' or 'timeline'");
+        response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Mode for GET must be 'process', 'preview' or 'timeline'. Mode for POST must be 'update_baseline'.");
         return null;
     }
 
@@ -164,5 +232,23 @@ public class ReferencedBuildRequest extends BaseController {
         writer.write(Long.toString(sourceBuild.getBuildId()));
         writer.write(",");
         writer.write(sourceBuild.getBuildNumber());
+    }
+    
+    SBuild getBuild(HttpServletRequest request) {
+        return getBuild(request, "buildId");
+    }
+
+    SBuild getBuild(HttpServletRequest request, String paramName) {
+        Long buildId = -1L;
+        try {
+            buildId = Long.parseLong(request.getParameter(paramName));
+        } catch (NumberFormatException e) { }
+
+        return m_server.findBuildInstanceById(buildId);
+    }
+
+    SBuildType getBuildType(HttpServletRequest request) {
+        String buildTypeStr = request.getParameter("buildTypeId");
+        return m_server.getProjectManager().findBuildTypeByExternalId(buildTypeStr);
     }
 }
