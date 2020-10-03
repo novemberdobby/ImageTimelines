@@ -3,6 +3,8 @@ package novemberdobby.teamcity.imageComp.agent;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.net.URLConnection;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -67,14 +69,13 @@ public class Processor extends AgentLifeCycleAdapter {
                 if(pathsParam != null) {
                     String serverUrl = build.getAgentConfiguration().getServerUrl();
 
-                    //TODO: escape tag
-                    String infoUrl = String.format("%s%s?mode=process&buildTypeId=%s&%s=%s&%s=%s&%s=%s", serverUrl, Constants.FEATURE_REFERENCE_BUILD_URL,
-                        build.getBuildTypeExternalId(),
-                        Constants.FEATURE_SETTING_COMPARE_TYPE, params.get(Constants.FEATURE_SETTING_COMPARE_TYPE),
-                        Constants.FEATURE_SETTING_TAG, params.get(Constants.FEATURE_SETTING_TAG),
-                        Constants.FEATURE_SETTING_BUILD_ID, params.get(Constants.FEATURE_SETTING_BUILD_ID));
-
                     try {
+                        String infoUrl = String.format("%s%s?mode=process&buildTypeId=%s&%s=%s&%s=%s&%s=%s", serverUrl, Constants.FEATURE_REFERENCE_BUILD_URL,
+                            build.getBuildTypeExternalId(),
+                            Constants.FEATURE_SETTING_COMPARE_TYPE, params.get(Constants.FEATURE_SETTING_COMPARE_TYPE),
+                            Constants.FEATURE_SETTING_TAG, URLEncoder.encode(params.get(Constants.FEATURE_SETTING_TAG), StandardCharsets.UTF_8.toString()),
+                            Constants.FEATURE_SETTING_BUILD_ID, params.get(Constants.FEATURE_SETTING_BUILD_ID));
+
                         List<String> resultStr = Util.webRequestLines(infoUrl, build.getAccessUser(), build.getAccessCode());
                         if(resultStr.size() == 1) {
                             String result = resultStr.get(0);
