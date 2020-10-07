@@ -3,13 +3,10 @@ package novemberdobby.teamcity.imageComp.server;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -23,11 +20,11 @@ import jetbrains.buildServer.serverSide.SBuild;
 import jetbrains.buildServer.serverSide.SBuildFeatureDescriptor;
 import jetbrains.buildServer.serverSide.SBuildServer;
 import jetbrains.buildServer.serverSide.SBuildType;
+import jetbrains.buildServer.serverSide.auth.AuthorityHolder;
 import jetbrains.buildServer.serverSide.auth.Permission;
+import jetbrains.buildServer.serverSide.auth.SecurityContext;
 import jetbrains.buildServer.tags.TagsManager;
-import jetbrains.buildServer.users.SUser;
 import jetbrains.buildServer.web.openapi.WebControllerManager;
-import jetbrains.buildServer.web.util.SessionUser;
 import novemberdobby.teamcity.imageComp.common.Constants;
 
 /*handle requests with modes:
@@ -39,43 +36,22 @@ public class ReferencedBuildRequest extends BaseController {
 
     SBuildServer m_server;
     TagsManager m_tagsManager;
+    SecurityContext m_secContext;
 
-    public ReferencedBuildRequest(SBuildServer server, TagsManager tags, WebControllerManager web) {
+    public ReferencedBuildRequest(SBuildServer server, TagsManager tags, WebControllerManager web, SecurityContext securityContext) {
         m_server = server;
         m_tagsManager = tags;
+        m_secContext = securityContext;
         web.registerController(Constants.FEATURE_REFERENCE_BUILD_URL, this);
     }
 
     private boolean hasPermission(HttpServletRequest request, SBuildType bType) {
-        SUser user = SessionUser.getUser(request);
 
-        //real user? check normally
-        if(user != null) {
-            return user.isPermissionGrantedForProject(bType.getProjectId(), Permission.VIEW_PROJECT);
+        AuthorityHolder authHolder = m_secContext.getAuthorityHolder();
+        if(authHolder != null) {
+            return authHolder.isPermissionGrantedForProject(bType.getProjectId(), Permission.VIEW_PROJECT);
         }
-
-        //if user is null but we're still handling the request, they must have authenticated correctly.
-        //one case where that's possible is a transient access user valid while the build is running,
-        //so check if the username matches a build of the build type we're dealing with.
-        //TODO there must be a nicer way to do this! put in a feature request
-        String auth = request.getHeader("authorization");
-        if(auth != null && auth.startsWith("Basic ")) {
-            auth = auth.substring("Basic ".length());
-            try {
-                auth = new String(Base64.getDecoder().decode(auth));
-            } catch (IllegalArgumentException e) {
-                return false;
-            }
-
-            Pattern authPtn = Pattern.compile("TeamCityBuildId=(?<id>\\d+):\\w{32}");
-            Matcher mtch = authPtn.matcher(auth);
-            if(mtch.matches()) {
-                Long buildId = Long.parseLong(mtch.group("id"));
-                SBuild build = m_server.findBuildInstanceById(buildId);
-                return build != null && build.getBuildTypeId().equals(bType.getBuildTypeId());
-            }
-        }
-
+        
         return false;
     }
 
