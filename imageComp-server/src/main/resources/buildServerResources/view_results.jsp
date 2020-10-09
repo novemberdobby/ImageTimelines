@@ -33,6 +33,10 @@
       width: 100%;
       display: block;
     }
+    .icLoading {
+      opacity: 0.5;
+      transition: .25s ease opacity;
+    }
     </style>
 
     <div id="statistics_empty" style="display: none;">
@@ -81,7 +85,7 @@
       <c:if test='${not external}'>
       <a href="${popout_url}?buildType=${buildTypeExtID}" id="img_comp_popout" target="_blank">
         <div class="icOption" style="width: auto;">New window<br>
-            <img src="${teamcityPluginResourcesPath}popout.png" style="width: 20px;"/>
+            <img src="${teamcityPluginResourcesPath}img/popout.png" style="width: 20px;"/>
         </div>
       </a>
       </c:if>
@@ -130,10 +134,10 @@
         <div class="slider">
           <div class="slider responsive">
             <div class="left image">
-              <img id="img_comp_left_slider" style="display:block;"/>
+              <img class="icImage" id="img_comp_left_slider" style="display:block;"/>
             </div>
             <div class="right image">
-              <img id="img_comp_right_slider" style="display:block;"/>
+              <img class="icImage" id="img_comp_right_slider" style="display:block;"/>
             </div>
           </div>
         </div>
@@ -437,16 +441,16 @@
                 
                 if(compType == "diff") {
                   var diffImage = BS.ImageCompResults.getResultFileName(artifact, "_diff");
-                  $('img_comp_difference').src = $('img_comp_difference_image').href = "/repository/download/${buildTypeExtID}/" + thisBuild.id + ":id/" + diffImage;
+                  BS.ImageCompResults.imgStartLoad($('img_comp_difference'), "/repository/download/${buildTypeExtID}/" + thisBuild.id + ":id/" + diffImage, true);
                   $('img_comp_difference_image').innerText = "Diff image";
                 }
                 
                 if(compType == "anim") {
                   var animImage = BS.ImageCompResults.getResultFileName(artifact, "_animated", "webp");
-                  $('img_comp_anim_diff').src = "/repository/download/${buildTypeExtID}/" + thisBuild.id + ":id/" + animImage;
+                  BS.ImageCompResults.imgStartLoad($('img_comp_anim_diff'), "/repository/download/${buildTypeExtID}/" + thisBuild.id + ":id/" + animImage, false);
                 } else {
-                  $('img_comp_left_' + compType).src = "/repository/download/${buildTypeExtID}/" + baselineId + ":id/" + artifact;
-                  $('img_comp_right_' + compType).src = "/repository/download/${buildTypeExtID}/" + thisBuild.id + ":id/" + artifact;
+                  BS.ImageCompResults.imgStartLoad($('img_comp_left_' + compType), "/repository/download/${buildTypeExtID}/" + baselineId + ":id/" + artifact, false);
+                  BS.ImageCompResults.imgStartLoad($('img_comp_right_' + compType), "/repository/download/${buildTypeExtID}/" + thisBuild.id + ":id/" + artifact, false);
 
                   $('img_comp_left_label_' + compType).href = "/viewLog.html?buildId=" + baselineId;
                   $('img_comp_left_label_' + compType).innerText = "Baseline: #" + baselineNumber;
@@ -596,8 +600,28 @@
               }
             });
           }
-        }
+        },
+
+        imgStartLoad(elem, imgSrc, alsoSetHref) {
+          elem.classList.add("icLoading");
+          elem.src = imgSrc;
+          if(alsoSetHref)
+          {
+            elem.href = imgSrc;
+          }
+        },
+
+        imgFinishLoad() {
+          this.classList.remove("icLoading");
+        },
       };
+
+      var imgElements = document.getElementsByClassName("icImage");
+
+      for(var i = 0; i < imgElements.length; i++) {
+        imgElements[i].addEventListener('load', BS.ImageCompResults.imgFinishLoad);
+        imgElements[i].addEventListener('error', BS.ImageCompResults.imgFinishLoad);
+      }
 
       var params = new URLSearchParams(window.location.search);
       if(params.has("ic_count")) $('img_comp_opt_count').value = params.get("ic_count");
