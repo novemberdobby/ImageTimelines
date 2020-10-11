@@ -58,7 +58,6 @@ public class ReferencedBuildRequest extends BaseController {
     @Override
     protected ModelAndView doHandle(HttpServletRequest request, HttpServletResponse response) throws Exception {
 
-        //TODO: are builds that get used for artifacts preserved past cleanup?
         String mode = request.getParameter("mode");
         if (mode != null) {
 
