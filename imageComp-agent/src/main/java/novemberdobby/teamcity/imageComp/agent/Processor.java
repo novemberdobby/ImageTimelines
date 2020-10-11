@@ -60,7 +60,6 @@ public class Processor extends AgentLifeCycleAdapter {
                 String pathsParam = params.get(Constants.FEATURE_SETTING_ARTIFACTS);
                 boolean problemOnError = "true".equals(params.get(Constants.FEATURE_SETTING_FAIL_ON_ERROR));
 
-                //TODO: generate thumbnails & show on page?
                 //TODO: retry all 3 server requests X times to handle downtime. internal prop with retry count?
 
                 //download artifacts from both builds to agent temp
