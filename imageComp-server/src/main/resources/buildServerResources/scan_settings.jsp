@@ -61,7 +61,7 @@
     </div>
 
     <select id="diff_type_multi" multiple="true" onchange="BS.ImageComparison.saveDiffTypes()">
-      <option value="ae">AE - absolute error count, number of different pixels (affected by fuzz)</option>
+      <option value="ae">AE - absolute error count, number of different pixels</option> <%-- TODO re-add "affected by fuzz" once implemented --%>
       <option value="dssim">DSSIM - structural dissimilarity index</option>
       <option value="fuzz">FUZZ - mean color distance</option>
       <option value="mae">MAE - mean absolute error (normalized), average channel error distance</option>
