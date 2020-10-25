@@ -61,6 +61,7 @@ public class ReferencedBuildRequest extends BaseController {
         String mode = request.getParameter("mode");
         if (mode != null) {
 
+            //TODO: tickbox for "only successful builds" (only display on last/tagged types)
             if(request.getMethod().equals("GET")) {
                 switch (mode.toLowerCase()) {
                     case "preview":
