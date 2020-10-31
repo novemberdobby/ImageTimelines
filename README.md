@@ -1,18 +1,22 @@
 # Image Timelines - TeamCity plugin for comparing image output of tests
 
 [![Demo video](/images/demo_preview.png)](http://www.youtube.com/watch?v=c7v1fSYcVI8 "Demo")
+
 The plugin was written with game development in mind, however it's suitable for any process outputting images that are expected to be near-perfectly consistent.
 
 ## Usage
 1. Install the plugin from Administration > Plugins List
 2. Add the "Image timelines" build feature to any build configuration or template, and set options as desired:
+
 ![feature](/images/feature.png "Build feature")
 
 After all steps/runners of a build have completed, the agent will attempt to compare the specified images (if they've been published as artifacts) to a previous build.
 
 #### Comparison modes
 *Last build*: use the last finished build, whether it succeeded or not.
+
 *Last build with tag*: find the last build with the specified tag and use it as the baseline (also disregards success).
+
 *Build with ID*: use a specific build. Note that this uses the build ID, not the number, which can be found in the URL of any build results page.
 
 #### Comparison methods/metrics
@@ -20,19 +24,27 @@ One or more metrics, for example peak signal to noise ratio, can be generated fr
 
 #### Advanced options
 ![feature](/images/feature_adv.png "Advanced settings")
+
 *Flicker*: enables the creation of .webp images for the "animated diff" view.
+
 *Fail build on error*: marks the build as failed if the agent is unable to download artifacts or compare images.
 
 ### Results
 The plugin creates an "image_comparisons" folder in the artifacts of each run:
+
 ![artifacts](/images/artifacts.png "Artifacts")
+
 Once these have started appearing, navigate to the timelines page from any finished build:
+
 ![tab_build_type](/images/tab_build_type.png "Build type tab")
+
 or from the build type page:
+
 ![tab_build_instance](/images/tab_build_instance.png "Build tab")
 
 ### Timeline view
 This is the main plugin page for viewing comparisons:
+
 ![timeline](/images/timeline.png "Timeline")
 
 1. Left toolbar:
@@ -59,12 +71,17 @@ Once you've changed any setting on the toolbar, copy the page URL for a direct l
 
 ### Statistics
 Each numerical comparison result is stored as a TeamCity statistic on each build:
+
 ![statistics](/images/statistics.png "Statistics")
+
 **Note**: while this page only displays numbers to two decimal places, a more accurate value is stored and this is shown in statistic graphs & the build log.
 
 To fail a build when a large difference is detected, first [add the relevant statistic to TC](https://www.jetbrains.com/help/teamcity/2020.2/build-failure-conditions.html#Adding+custom+build+metric) (which takes effect immediately) then add a new failure condition:
+
 ![stat_compare](/images/stat_compare.png "Stat comparison")
+
 Be sure to also update the reference build above when you change it in the plugin's build feature:
+
 ![stat_compare_types](/images/stat_compare_types.png "Stat comparison types")
 
 ## Considerations
